@@ -127,7 +127,7 @@
                 </div>
             </div>
 
-            <button class="btn-calc" id="calcBtn" type="button">
+            <button class="btn-calc" id="calcBtn" type="button" style="display: none;">
                 <i class="fas fa-calculator"></i>
                 Calculate My Payment
             </button>
@@ -135,11 +135,13 @@
             <div id="errorMsg" class="error-msg" role="alert"></div>
         </article>
 
-        <!-- Results Section -->
         <aside class="results-card">
             <div class="calc-card payment-result">
-                <div class="payment-label">Estimated Monthly Payment</div>
+                <div class="payment-label">PITI Monthly Payment</div>
                 <div class="payment-amount" id="paymentAmount" aria-live="polite">$0</div>
+                <div class="pi-sub-label" style="font-size: 0.9rem; color: var(--text-muted); margin-top: 10px;">
+                    Principal & Interest (P&I): <span id="piAmount" style="color: #fff; font-weight: 600;">$0</span>
+                </div>
             </div>
 
             <div class="stats-grid">
@@ -198,6 +200,33 @@
                     you tens of thousands of dollars over 30 years.</p>
                 <p><strong>Compare Loan Terms:</strong> Use this tool to compare a 15-year fixed mortgage vs. a 30-year
                     fixed mortgage to see where you save most on interest.</p>
+            </div>
+        </div>
+
+        <!-- Trust & Transparency Section -->
+        <div class="transparency-section"
+            style="margin-top: 60px; padding-top: 40px; border-top: 1px solid var(--glass-border);">
+            <h3 style="color: #fff; margin-bottom: 20px;"><i class="fas fa-shield-halved"
+                    style="color: var(--secondary); margin-right: 10px;"></i>Trust & Transparency</h3>
+
+            <div
+                style="background: var(--glass); padding: 30px; border-radius: 20px; border: 1px solid var(--glass-border);">
+                <h4 style="color: #fff; margin-bottom: 10px;">How This Calculation Works</h4>
+                <p style="font-size: 0.9rem;">We use the standard amortization formula: <strong>M = P [ i(1 + i)^n ] / [
+                        (1 + i)^n – 1 ]</strong>.
+                    Where P is principal, i is monthly interest, and n is number of months.
+                    PITI represents the total of Principal, Interest, Taxes, and Insurance.</p>
+
+                <h4 style="color: #fff; margin-top: 20px; margin-bottom: 10px;">Our Assumptions</h4>
+                <ul style="font-size: 0.85rem; padding-left: 20px;">
+                    <li>Interest is compounded monthly.</li>
+                    <li>Property taxes and insurance are estimated based on annual figures divided equally over 12
+                        months.</li>
+                    <li>Private Mortgage Insurance (PMI) is not included in this basic estimate.</li>
+                </ul>
+
+                <p style="margin-top: 30px; font-size: 0.8rem; font-style: italic;">Formula & Logic Last Updated:
+                    December 30, 2025</p>
             </div>
         </div>
     </section>

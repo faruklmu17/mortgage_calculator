@@ -183,9 +183,19 @@ select:focus {
 
 .payment-amount {
     font-family: 'Outfit', sans-serif;
-    font-size: 3.5rem;
+    font-size: clamp(2.5rem, 8vw, 3.5rem);
     font-weight: 800;
     color: #fff;
+    line-height: 1.1;
+}
+
+.pi-sub-label {
+    animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .stats-grid {
@@ -277,5 +287,47 @@ select:focus {
 @media (max-width: 900px) {
     .calculator-wrapper {
         grid-template-columns: 1fr;
+        gap: 20px;
     }
+    
+    body {
+        padding: 20px 15px;
+    }
+    
+    .calc-card {
+        padding: 25px;
+    }
+    
+    h1 {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .row {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+    
+    .payment-amount {
+        font-size: 2.2rem;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Transparency Section Styling */
+.transparency-section h4 {
+    font-family: 'Outfit', sans-serif;
+    letter-spacing: 0.02em;
+}
+
+.transparency-section p, .transparency-section li {
+    color: var(--text-muted);
+}
+
+.transparency-section ul li {
+    margin-bottom: 8px;
 }

@@ -20,6 +20,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let myDonutChart = null;
 
+    const piDisplay = document.getElementById('piAmount');
+
     function parseInput(val) {
         return parseFloat(String(val).replace(/,/g, '')) || 0;
     }
@@ -44,12 +46,12 @@ document.addEventListener('DOMContentLoaded', function () {
         const monthlyHoa = parseInput(hoaInput.value);
 
         if (price <= 0 || price <= downPayment) {
-            showError("Please enter a valid house price and down payment.");
+            paymentDisplay.textContent = "$0";
             return;
         }
 
         if (rate <= 0 || termMonths <= 0) {
-            showError("Please enter a valid interest rate and term.");
+            paymentDisplay.textContent = "$0";
             return;
         }
 
@@ -65,6 +67,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         // Update UI
         paymentDisplay.textContent = formatCurrency(totalMonthly);
+        piDisplay.textContent = formatCurrency(monthlyPI);
         totalPrincipalDisplay.textContent = formatCurrency(principal);
         totalInterestDisplay.textContent = formatCurrency((monthlyPI * termMonths) - principal);
         totalTaxDisplay.textContent = formatCurrency(monthlyTax + monthlyInsurance + monthlyHoa);
@@ -73,13 +76,10 @@ document.addEventListener('DOMContentLoaded', function () {
         updateChart(monthlyPI, monthlyTax, monthlyInsurance, monthlyHoa);
     }
 
-    function showError(msg) {
-        errorMsg.textContent = msg;
-        errorMsg.style.display = 'block';
-    }
-
     function updateChart(pi, tax, ins, hoa) {
-        const ctx = document.getElementById('paymentChart').getContext('2d');
+        const canvas = document.getElementById('paymentChart');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
 
         const data = {
             labels: ['P&I', 'Taxes', 'Insurance', 'HOA'],
@@ -112,7 +112,17 @@ document.addEventListener('DOMContentLoaded', function () {
                         labels: {
                             color: '#94a3b8',
                             usePointStyle: true,
-                            padding: 20
+                            padding: 20,
+                            font: {
+                                size: 12
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': ' + formatCurrency(context.raw);
+                            }
                         }
                     }
                 },
@@ -122,11 +132,13 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Event Listeners
-    calcBtn.addEventListener('click', calculate);
+    // Event Listeners for real-time updates
+    [priceInput, downPaymentInput, rateInput, taxInput, insuranceInput, hoaInput, termInput].forEach(field => {
+        field.addEventListener('input', calculate);
+    });
 
     // Auto-format currency on input blur
-    [priceInput, downPaymentInput].forEach(input => {
+    [priceInput, downPaymentInput, taxInput, insuranceInput].forEach(input => {
         input.addEventListener('blur', (e) => {
             const val = parseInput(e.target.value);
             if (val > 0) {
