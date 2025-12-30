@@ -14,10 +14,10 @@
         content="mortgage calculator, home loan payment, calculate mortgage, monthly mortgage estimator, property tax calculator, house payment calculator">
     <meta name="author" content="Mortgage Pro">
 
-
+    <link rel="canonical" href="https://faruklmu17.github.io/mortgage_calculator/">
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="index.html">
+    <meta property="og:url" content="https://faruklmu17.github.io/mortgage_calculator/">
     <meta property="og:title" content="Advanced Mortgage Calculator - estimate your monthly home payments">
     <meta property="og:description"
         content="Free online tool to calculate monthly mortgage payments with property taxes, insurance, and interest rates.">
@@ -25,7 +25,7 @@
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="index.html">
+    <meta property="twitter:url" content="https://faruklmu17.github.io/mortgage_calculator/">
     <meta property="twitter:title" content="Advanced Mortgage Calculator">
     <meta property="twitter:description"
         content="Calculate your home loan payments including taxes and fees instantly.">
@@ -64,25 +64,30 @@
                 <label for="price">Home Price ($)</label>
                 <div class="input-wrapper">
                     <i class="fas fa-home"></i>
-                    <input type="text" id="price" placeholder="500,000" aria-label="Home Purchase Price"
-                        value="500,000">
+                    <input type="text" id="price" placeholder="450,000" aria-label="Home Purchase Price">
                 </div>
             </div>
 
             <div class="row">
                 <div class="input-group">
-                    <label for="downPayment">Down Payment ($)</label>
+                    <div class="label-row"
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <label for="downPayment" style="margin-bottom: 0;">Down Payment</label>
+                        <div class="toggle-group" style="display: flex; gap: 5px;">
+                            <button type="button" class="toggle-btn active" id="dpDollar">$</button>
+                            <button type="button" class="toggle-btn" id="dpPercent">%</button>
+                        </div>
+                    </div>
                     <div class="input-wrapper">
-                        <i class="fas fa-hand-holding-usd"></i>
-                        <input type="text" id="downPayment" placeholder="100,000" aria-label="Down Payment Amount"
-                            value="100,000">
+                        <i class="fas fa-hand-holding-usd" id="dpIcon"></i>
+                        <input type="text" id="downPayment" placeholder="90,000" aria-label="Down Payment Amount">
                     </div>
                 </div>
                 <div class="input-group">
                     <label for="rate">Interest Rate (%)</label>
                     <div class="input-wrapper">
                         <i class="fas fa-percentage"></i>
-                        <input type="text" id="rate" placeholder="6.5" aria-label="Annual Interest Rate" value="6.5">
+                        <input type="text" id="rate" placeholder="6.5" aria-label="Annual Interest Rate">
                     </div>
                 </div>
             </div>
@@ -104,7 +109,7 @@
                     <label for="tax">Property Tax (Annual $)</label>
                     <div class="input-wrapper">
                         <i class="fas fa-landmark"></i>
-                        <input type="text" id="tax" placeholder="6,000" aria-label="Annual Property Tax" value="6,000">
+                        <input type="text" id="tax" placeholder="5,500" aria-label="Annual Property Tax">
                     </div>
                 </div>
             </div>
@@ -114,15 +119,14 @@
                     <label for="insurance">Home Insurance (Annual $)</label>
                     <div class="input-wrapper">
                         <i class="fas fa-shield-alt"></i>
-                        <input type="text" id="insurance" placeholder="1,200" aria-label="Annual Homeowners Insurance"
-                            value="1,200">
+                        <input type="text" id="insurance" placeholder="1,200" aria-label="Annual Homeowners Insurance">
                     </div>
                 </div>
                 <div class="input-group">
                     <label for="hoa">HOA Fee (Monthly $)</label>
                     <div class="input-wrapper">
                         <i class="fas fa-building"></i>
-                        <input type="text" id="hoa" placeholder="0" aria-label="Monthly HOA Fees" value="0">
+                        <input type="text" id="hoa" placeholder="0" aria-label="Monthly HOA Fees">
                     </div>
                 </div>
             </div>

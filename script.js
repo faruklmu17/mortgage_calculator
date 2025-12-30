@@ -19,8 +19,45 @@ document.addEventListener('DOMContentLoaded', function () {
     const totalPaymentDisplay = document.getElementById('totalPayment');
 
     let myDonutChart = null;
-
     const piDisplay = document.getElementById('piAmount');
+
+    // Down Payment Toggle State
+    let downPaymentMode = 'dollar';
+    const btnDollar = document.getElementById('dpDollar');
+    const btnPercent = document.getElementById('dpPercent');
+    const dpIcon = document.getElementById('dpIcon');
+
+    btnDollar.addEventListener('click', () => {
+        if (downPaymentMode === 'dollar') return;
+        downPaymentMode = 'dollar';
+        btnDollar.classList.add('active');
+        btnPercent.classList.remove('active');
+        dpIcon.className = 'fas fa-hand-holding-usd';
+
+        // Convert current percentage value back to dollars
+        const price = parseInput(priceInput.value);
+        const currentVal = parseInput(downPaymentInput.value);
+        if (currentVal > 0 && price > 0) {
+            downPaymentInput.value = Math.round(price * (currentVal / 100)).toLocaleString();
+        }
+        calculate();
+    });
+
+    btnPercent.addEventListener('click', () => {
+        if (downPaymentMode === 'percent') return;
+        downPaymentMode = 'percent';
+        btnPercent.classList.add('active');
+        btnDollar.classList.remove('active');
+        dpIcon.className = 'fas fa-percentage';
+
+        // Convert current dollar value to percentage
+        const price = parseInput(priceInput.value);
+        const currentVal = parseInput(downPaymentInput.value);
+        if (currentVal > 0 && price > 0) {
+            downPaymentInput.value = ((currentVal / price) * 100).toFixed(1);
+        }
+        calculate();
+    });
 
     function parseInput(val) {
         return parseFloat(String(val).replace(/,/g, '')) || 0;
@@ -38,7 +75,12 @@ document.addEventListener('DOMContentLoaded', function () {
         errorMsg.style.display = 'none';
 
         const price = parseInput(priceInput.value);
-        const downPayment = parseInput(downPaymentInput.value);
+        let downPayment = parseInput(downPaymentInput.value);
+
+        if (downPaymentMode === 'percent') {
+            downPayment = price * (downPayment / 100);
+        }
+
         const rate = parseInput(rateInput.value) / 100 / 12;
         const termMonths = parseInput(termInput.value) * 12;
         const annualTax = parseInput(taxInput.value);
@@ -120,7 +162,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     },
                     tooltip: {
                         callbacks: {
-                            label: function(context) {
+                            label: function (context) {
                                 return context.label + ': ' + formatCurrency(context.raw);
                             }
                         }
@@ -138,7 +180,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Auto-format currency on input blur
-    [priceInput, downPaymentInput, taxInput, insuranceInput].forEach(input => {
+    [priceInput, taxInput, insuranceInput].forEach(input => {
         input.addEventListener('blur', (e) => {
             const val = parseInput(e.target.value);
             if (val > 0) {
@@ -147,6 +189,58 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Initial Calculation
-    calculate();
+    downPaymentInput.addEventListener('blur', (e) => {
+        const val = parseInput(e.target.value);
+        if (val > 0 && downPaymentMode === 'dollar') {
+            e.target.value = val.toLocaleString('en-US');
+        } else if (val > 0 && downPaymentMode === 'percent') {
+            e.target.value = val.toFixed(1);
+        }
+    });
+
+    function runDemo() {
+        const demoData = {
+            price: "525,000",
+            downPayment: "105,000",
+            rate: "6.75",
+            tax: "6,300",
+            insurance: "1,440",
+            hoa: "250"
+        };
+
+        const inputs = [priceInput, downPaymentInput, rateInput, taxInput, insuranceInput, hoaInput];
+
+        // 1. Initial wait so user sees the page load empty
+        setTimeout(() => {
+            // 2. Enter Home Price
+            priceInput.value = demoData.price;
+            calculate();
+
+            // 3. Add Interest Rate
+            setTimeout(() => {
+                rateInput.value = demoData.rate;
+                calculate();
+
+                // 4. Add remaining fields to finish the graph
+                setTimeout(() => {
+                    downPaymentInput.value = demoData.downPayment;
+                    taxInput.value = demoData.tax;
+                    insuranceInput.value = demoData.insurance;
+                    hoaInput.value = demoData.hoa;
+                    calculate();
+
+                    // 5. Once loaded, wait 2.5 seconds and clear inputs to show placeholders
+                    setTimeout(() => {
+                        inputs.forEach(input => input.value = "");
+                        // Not calling calculate() here keeps the results visible 
+                        // while exposing the placeholders in the fields.
+                    }, 2500);
+
+                }, 400);
+            }, 400);
+        }, 800);
+    }
+
+    // Initial Demo Start
+    runDemo();
 });

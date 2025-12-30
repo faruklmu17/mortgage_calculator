@@ -14,6 +14,30 @@
     --danger: #ef4444;
 }
 
+.toggle-btn {
+    padding: 2px 10px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: 1px solid var(--glass-border);
+    background: var(--input-bg);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.toggle-btn.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    box-shadow: 0 0 15px rgba(79, 70, 229, 0.3);
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -194,8 +218,15 @@ select:focus {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(5px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .stats-grid {
@@ -289,15 +320,15 @@ select:focus {
         grid-template-columns: 1fr;
         gap: 20px;
     }
-    
+
     body {
         padding: 20px 15px;
     }
-    
+
     .calc-card {
         padding: 25px;
     }
-    
+
     h1 {
         font-size: 2rem;
     }
@@ -308,11 +339,11 @@ select:focus {
         grid-template-columns: 1fr;
         gap: 0;
     }
-    
+
     .payment-amount {
         font-size: 2.2rem;
     }
-    
+
     .stats-grid {
         grid-template-columns: 1fr;
     }
@@ -324,7 +355,8 @@ select:focus {
     letter-spacing: 0.02em;
 }
 
-.transparency-section p, .transparency-section li {
+.transparency-section p,
+.transparency-section li {
     color: var(--text-muted);
 }
 
