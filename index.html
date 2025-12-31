@@ -2,429 +2,82 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Canonical (KEEP ONLY ONE) -->
+    <link rel="canonical" href="https://mortgagepayofflab.com/" />
 
     <!-- Primary SEO Meta Tags -->
-    <title>Free Mortgage Calculator - Monthly Home Loan Payment Estimator</title>
-    <meta name="title" content="Free Mortgage Calculator - Monthly Home Loan Payment Estimator">
+    <title>Mortgage Payoff Calculator – Monthly Payment & Payoff Insights</title>
+    <meta name="title" content="Mortgage Payoff Calculator – Monthly Payment & Payoff Insights" />
     <meta name="description"
-        content="Use our advanced mortgage calculator to estimate your monthly payments, including property taxes, home insurance, and HOA fees. Get a complete breakdown of principal and interest.">
-    <meta name="keywords"
-        content="mortgage calculator, home loan payment, calculate mortgage, monthly mortgage estimator, property tax calculator, house payment calculator">
-    <meta name="author" content="Mortgage Pro">
+        content="Estimate your monthly mortgage payment (PITI) and understand how your loan costs break down. Add taxes, insurance, HOA, and compare terms." />
+    <meta name="author" content="Mortgage Payoff Lab" />
 
-    <link rel="canonical" href="https://faruklmu17.github.io/mortgage_calculator/">
     <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://faruklmu17.github.io/mortgage_calculator/">
-    <meta property="og:title" content="Advanced Mortgage Calculator - estimate your monthly home payments">
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://mortgagepayofflab.com/" />
+    <meta property="og:title" content="Mortgage Payoff Lab – Monthly Payment Calculator" />
     <meta property="og:description"
-        content="Free online tool to calculate monthly mortgage payments with property taxes, insurance, and interest rates.">
-    <meta property="og:image" content="preview.png">
+        content="Calculate monthly mortgage payments including taxes, insurance, and HOA fees. See your principal & interest breakdown." />
+    <meta property="og:image" content="preview.png" />
 
     <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image">
-    <meta property="twitter:url" content="https://faruklmu17.github.io/mortgage_calculator/">
-    <meta property="twitter:title" content="Advanced Mortgage Calculator">
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://mortgagepayofflab.com/" />
+    <meta property="twitter:title" content="Mortgage Payoff Lab – Monthly Payment Calculator" />
     <meta property="twitter:description"
-        content="Calculate your home loan payments including taxes and fees instantly.">
-    <meta property="twitter:image" content="preview.png">
+        content="Estimate your monthly mortgage payment (PITI) and see your principal & interest breakdown instantly." />
+    <meta property="twitter:image" content="preview.png" />
 
     <!-- Structured Data (JSON-LD) for Search Engines -->
     <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
-      "name": "Mortgage Pro Calculator",
-      "operatingSystem": "Web",
-      "applicationCategory": "FinanceApplication",
-      "description": "An advanced mortgage calculator to estimate monthly house payments including taxes, insurance, and interest.",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD"
-      }
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Mortgage Payoff Lab Calculator",
+    "operatingSystem": "Web",
+    "applicationCategory": "FinanceApplication",
+    "description": "A mortgage calculator to estimate monthly house payments including taxes, insurance, HOA, and interest.",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
     }
-    </script>
+  }
+  </script>
 
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+    <link rel="stylesheet" href="style.css">
 
-        :root {
-            --primary: #4f46e5;
-            --primary-hover: #4338ca;
-            --secondary: #10b981;
-            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-            --glass: rgba(255, 255, 255, 0.03);
-            --glass-border: rgba(255, 255, 255, 0.1);
-            --glass-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --input-bg: rgba(255, 255, 255, 0.05);
-            --danger: #ef4444;
-        }
-
-        .toggle-btn {
-            padding: 2px 10px;
-            border-radius: 8px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            border: 1px solid var(--glass-border);
-            background: var(--input-bg);
-            color: var(--text-muted);
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .toggle-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            color: #fff;
-        }
-
-        .toggle-btn.active {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
-            box-shadow: 0 0 15px rgba(79, 70, 229, 0.3);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-gradient);
-            color: var(--text-main);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 40px 20px;
-            overflow-x: hidden;
-        }
-
-        .calculator-wrapper {
-            width: 100%;
-            max-width: 1000px;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            opacity: 0;
-            transform: translateY(20px);
-            animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-        }
-
-        @keyframes fadeInUp {
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .calc-card {
-            background: var(--glass);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: 24px;
-            padding: 40px;
-            box-shadow: var(--glass-shadow);
-        }
-
-        .results-card {
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-        }
-
-        h1 {
-            font-family: 'Outfit', sans-serif;
-            font-size: 2.5rem;
-            font-weight: 800;
-            margin-bottom: 8px;
-            background: linear-gradient(to right, #fff, #94a3b8);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-
-        .subtitle {
-            color: var(--text-muted);
-            font-size: 1.1rem;
-            margin-bottom: 32px;
-        }
-
-        .input-group {
-            margin-bottom: 24px;
-        }
-
-        label {
-            display: block;
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .input-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .input-wrapper i {
-            position: absolute;
-            left: 16px;
-            color: var(--text-muted);
-        }
-
-        input,
-        select {
-            width: 100%;
-            background: var(--input-bg);
-            border: 1px solid var(--glass-border);
-            padding: 14px 16px 14px 44px;
-            border-radius: 12px;
-            color: #fff;
-            font-size: 1.1rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            outline: none;
-        }
-
-        input:focus,
-        select:focus {
-            border-color: var(--primary);
-            background: rgba(255, 255, 255, 0.08);
-            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
-        }
-
-        .row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        .btn-calc {
-            width: 100%;
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 18px;
-            border-radius: 14px;
-            font-size: 1.1rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        .btn-calc:hover {
-            background: var(--primary-hover);
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4);
-        }
-
-        .btn-calc:active {
-            transform: translateY(0);
-        }
-
-        /* Results Styling */
-        .payment-result {
-            text-align: center;
-            padding: 30px;
-            background: rgba(79, 70, 229, 0.1);
-            border-radius: 20px;
-            border: 1px solid rgba(79, 70, 229, 0.2);
-        }
-
-        .payment-label {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            margin-bottom: 8px;
-        }
-
-        .payment-amount {
-            font-family: 'Outfit', sans-serif;
-            font-size: clamp(2.5rem, 8vw, 3.5rem);
-            font-weight: 800;
-            color: #fff;
-            line-height: 1.1;
-        }
-
-        .pi-sub-label {
-            animation: fadeIn 0.5s ease-out;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(5px);
-            }
-
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-        }
-
-        .stat-card {
-            background: var(--glass);
-            padding: 20px;
-            border-radius: 16px;
-            border: 1px solid var(--glass-border);
-        }
-
-        .stat-card .label {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-bottom: 4px;
-        }
-
-        .stat-card .value {
-            font-size: 1.2rem;
-            font-weight: 700;
-        }
-
-        .chart-container {
-            background: var(--glass);
-            border-radius: 20px;
-            padding: 24px;
-            border: 1px solid var(--glass-border);
-            flex-grow: 1;
-            min-height: 250px;
-        }
-
-        .error-msg {
-            background: rgba(239, 68, 68, 0.1);
-            color: var(--danger);
-            padding: 12px;
-            border-radius: 8px;
-            margin-top: 16px;
-            font-size: 0.9rem;
-            text-align: center;
-            display: none;
-        }
-
-        .seo-content {
-            margin-top: 60px;
-            animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.2s forwards;
-            opacity: 0;
-        }
-
-        .seo-content h2 {
-            font-family: 'Outfit', sans-serif;
-            font-size: 2.2rem;
-            background: linear-gradient(to right, #fff, var(--primary));
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-            margin-bottom: 24px;
-        }
-
-        .seo-content h3 {
-            font-family: 'Outfit', sans-serif;
-            font-size: 1.4rem;
-            color: #fff;
-            margin-bottom: 12px;
-        }
-
-        .seo-content ul {
-            list-style: none !important;
-            padding: 0 !important;
-        }
-
-        .seo-content ul li {
-            position: relative;
-            padding-left: 24px;
-            margin-bottom: 15px;
-        }
-
-        .seo-content ul li::before {
-            content: '→';
-            position: absolute;
-            left: 0;
-            color: var(--primary);
-            font-weight: 800;
-        }
-
-        @media (max-width: 900px) {
-            .calculator-wrapper {
-                grid-template-columns: 1fr;
-                gap: 20px;
-            }
-
-            body {
-                padding: 20px 15px;
-            }
-
-            .calc-card {
-                padding: 25px;
-            }
-
-            h1 {
-                font-size: 2rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .row {
-                grid-template-columns: 1fr;
-                gap: 0;
-            }
-
-            .payment-amount {
-                font-size: 2.2rem;
-            }
-
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* Transparency Section Styling */
-        .transparency-section h4 {
-            font-family: 'Outfit', sans-serif;
-            letter-spacing: 0.02em;
-        }
-
-        .transparency-section p,
-        .transparency-section li {
-            color: var(--text-muted);
-        }
-
-        .transparency-section ul li {
-            margin-bottom: 8px;
-        }
-    </style>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
         media="print" onload="this.media='all'">
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
 </head>
 
 <body>
-    <main class="calculator-wrapper">
+    <header class="main-header">
+        <div class="header-content">
+            <a href="/" class="logo">
+                <div class="logo-icon"><i class="fas fa-chart-pie"></i></div>
+                <span>Mortgage Payoff Lab</span>
+            </a>
+            <nav class="nav-links">
+                <a href="#calculator" class="nav-item active">Calculator</a>
+                <a href="#guide" class="nav-item">Guide</a>
+                <a href="#tips" class="nav-item">Tips</a>
+                <button class="nav-btn">Get Started</button>
+            </nav>
+            <div class="mobile-menu-btn">
+                <i class="fas fa-bars"></i>
+            </div>
+        </div>
+    </header>
+
+    <main class="calculator-wrapper" id="calculator">
         <!-- Input Section -->
         <article class="calc-card">
-            <h1>Mortgage <span style="color: var(--primary);">Pro</span></h1>
+            <h1>Mortgage <span style="color: var(--primary);">Payoff Lab</span></h1>
             <p class="subtitle">Enter your details to estimate your total monthly property expenses.</p>
 
             <div class="input-group">
@@ -498,7 +151,8 @@
                 </div>
             </div>
 
-            <button class="btn-calc" id="calcBtn" type="button" style="display: none;">
+            <!-- Button is visible now -->
+            <button class="btn-calc" id="calcBtn" type="button">
                 <i class="fas fa-calculator"></i>
                 Calculate My Payment
             </button>
@@ -541,70 +195,115 @@
     </main>
 
     <!-- SEO Content Section -->
-    <section class="seo-content" style="max-width: 1000px; padding: 40px; color: var(--text-muted); line-height: 1.8;">
-        <h2 style="color: #fff; font-family: 'Outfit', sans-serif; margin-bottom: 20px;">Comprehensive Mortgage Payment
-            Calculator</h2>
-        <p>Planning to buy a home? Our <strong>mortgage payment calculator</strong> is designed to provide you with a
-            high-accuracy estimate of your monthly housing costs. Unlike basic tools, Mortgage Pro factors in the
-            often-overlooked expenses that make up your true monthly commitment.</p>
+    <section class="seo-content" id="guide"
+        style="max-width: 1000px; padding: 40px; color: var(--text-muted); line-height: 1.8;">
+        <h2 style="color: #fff; font-family: 'Outfit', sans-serif; margin-bottom: 20px;">
+            Mortgage Payment Calculator
+        </h2>
 
-        <div
+        <p>
+            Planning to buy a home? <strong>Mortgage Payoff Lab</strong> helps you estimate your monthly housing costs
+            so you
+            can budget with confidence. This calculator includes the common components of a payment—principal, interest,
+            property taxes, homeowners insurance, and HOA fees—so you can understand the true monthly cost.
+        </p>
+
+        <div id="tips"
             style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 30px; margin-top: 30px;">
             <div>
                 <h3 style="color: #fff; margin-bottom: 15px;">Understanding Your Mortgage</h3>
-                <p>When you use a <strong>home loan calculator</strong>, it's important to understand the components of
-                    your payment:</p>
+                <p>When you use a mortgage calculator, it helps to understand the main parts of your payment:</p>
                 <ul style="margin-left: 20px;">
-                    <li><strong>P&I (Principal & Interest):</strong> These are the core bank payments for the money you
-                        borrowed.</li>
-                    <li><strong>Property Escrow:</strong> Your annual property taxes and homeowners insurance are often
-                        divided by 12 and collected monthly.</li>
-                    <li><strong>Homeowners Association (HOA):</strong> If your property is in a managed community, these
-                        fees are a critical part of your budget.</li>
+                    <li><strong>P&amp;I (Principal &amp; Interest):</strong> Your base loan payment to the lender.</li>
+                    <li><strong>Escrow (Taxes &amp; Insurance):</strong> Often collected monthly and paid out annually.
+                    </li>
+                    <li><strong>HOA:</strong> Monthly fees for managed communities (if applicable).</li>
                 </ul>
             </div>
             <div>
-                <h3 style="color: #fff; margin-bottom: 15px;">Tips for Lowering Your Payment</h3>
-                <p><strong>Increase your Down Payment:</strong> Putting more money down reduces the loan principal and
-                    can eliminate the need for PMI.</p>
-                <p><strong>Shop for Lower Interest Rates:</strong> Even a 0.5% difference in your interest rate can save
-                    you tens of thousands of dollars over 30 years.</p>
-                <p><strong>Compare Loan Terms:</strong> Use this tool to compare a 15-year fixed mortgage vs. a 30-year
-                    fixed mortgage to see where you save most on interest.</p>
+                <h3 style="color: #fff; margin-bottom: 15px;">Tips to Save Money Over Time</h3>
+                <p><strong>Increase your down payment:</strong> A larger down payment reduces your loan balance and
+                    interest.</p>
+                <p><strong>Compare loan terms:</strong> 15-year vs 30-year mortgages can drastically change total
+                    interest paid.</p>
+                <p><strong>Pay extra principal:</strong> Even small extra payments can reduce interest and shorten
+                    payoff time
+                    (coming soon in Mortgage Payoff Lab).</p>
             </div>
         </div>
 
         <!-- Trust & Transparency Section -->
         <div class="transparency-section"
             style="margin-top: 60px; padding-top: 40px; border-top: 1px solid var(--glass-border);">
-            <h3 style="color: #fff; margin-bottom: 20px;"><i class="fas fa-shield-halved"
-                    style="color: var(--secondary); margin-right: 10px;"></i>Trust & Transparency</h3>
+            <h3 style="color: #fff; margin-bottom: 20px;">
+                <i class="fas fa-shield-halved" style="color: var(--secondary); margin-right: 10px;"></i>
+                Trust &amp; Transparency
+            </h3>
 
             <div
                 style="background: var(--glass); padding: 30px; border-radius: 20px; border: 1px solid var(--glass-border);">
                 <h4 style="color: #fff; margin-bottom: 10px;">How This Calculation Works</h4>
-                <p style="font-size: 0.9rem;">We use the standard amortization formula: <strong>M = P [ i(1 + i)^n ] / [
-                        (1 + i)^n – 1 ]</strong>.
-                    Where P is principal, i is monthly interest, and n is number of months.
-                    PITI represents the total of Principal, Interest, Taxes, and Insurance.</p>
+                <p style="font-size: 0.9rem;">
+                    We use the standard amortization formula: <strong>M = P [ i(1 + i)^n ] / [ (1 + i)^n – 1 ]</strong>.
+                    Where P is principal, i is monthly interest, and n is number of months. PITI represents Principal,
+                    Interest,
+                    Taxes, and Insurance.
+                </p>
 
                 <h4 style="color: #fff; margin-top: 20px; margin-bottom: 10px;">Our Assumptions</h4>
                 <ul style="font-size: 0.85rem; padding-left: 20px;">
                     <li>Interest is compounded monthly.</li>
-                    <li>Property taxes and insurance are estimated based on annual figures divided equally over 12
-                        months.</li>
-                    <li>Private Mortgage Insurance (PMI) is not included in this basic estimate.</li>
+                    <li>Property taxes and insurance are estimated using annual figures divided by 12.</li>
+                    <li>PMI is not included in this basic estimate.</li>
                 </ul>
 
-                <p style="margin-top: 30px; font-size: 0.8rem; font-style: italic;">Formula & Logic Last Updated:
-                    December 30, 2025</p>
+                <p style="margin-top: 30px; font-size: 0.8rem; font-style: italic;">
+                    Formula &amp; Logic Last Updated: December 31, 2025
+                </p>
             </div>
         </div>
     </section>
 
-    <footer style="margin: 60px 0; color: var(--text-muted); font-size: 0.9rem; text-align: center;">
-        <p>&copy; 2025 Mortgage Pro. All rights reserved. | <a href="privacy.html"
-                style="color: var(--primary); text-decoration: none;">Privacy Policy</a></p>
+    <footer class="main-footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <div class="footer-logo">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>Mortgage Payoff Lab</span>
+                </div>
+                <p class="footer-desc">
+                    Empowering homeowners with transparent, easy-to-use financial tools to help you make smarter
+                    decisions.
+                </p>
+            </div>
+
+            <div class="footer-links-group">
+                <h4>Product</h4>
+                <a href="#calculator">Calculator</a>
+                <a href="#guide">Guide</a>
+                <a href="#tips">Tips</a>
+            </div>
+
+            <div class="footer-links-group">
+                <h4>Company</h4>
+                <a href="#">About Us</a>
+                <a href="#">Contact</a>
+                <a href="privacy.html">Privacy Policy</a>
+            </div>
+
+            <div class="footer-social">
+                <h4>Connect</h4>
+                <div class="social-icons">
+                    <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                    <a href="#" aria-label="GitHub"><i class="fab fa-github"></i></a>
+                    <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2025 Mortgage Payoff Lab. All rights reserved.</p>
+        </div>
     </footer>
 
     <script src="script.js"></script>
