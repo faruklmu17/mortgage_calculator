@@ -31,22 +31,58 @@
         content="Estimate your monthly mortgage payment (PITI) and see your principal & interest breakdown instantly." />
     <meta property="twitter:image" content="preview.png" />
 
-    <!-- Structured Data (JSON-LD) for Search Engines -->
+    <!-- Structured Data (JSON-LD) for Search Engines & AI Chatbots -->
     <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    "name": "Mortgage Payoff Lab Calculator",
-    "operatingSystem": "Web",
-    "applicationCategory": "FinanceApplication",
-    "description": "A mortgage calculator to estimate monthly house payments including taxes, insurance, HOA, and interest.",
-    "offers": {
-      "@type": "Offer",
-      "price": "0",
-      "priceCurrency": "USD"
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Mortgage Payoff Lab",
+      "url": "https://mortgagepayofflab.com/",
+      "operatingSystem": "Web",
+      "applicationCategory": "FinanceApplication",
+      "description": "Premium mortgage calculator to estimate monthly PITI payments (Principal, Interest, Taxes, Insurance) and HOA fees with real-time donut chart visualization.",
+      "featureList": [
+        "Real-time monthly payment calculation",
+        "PITI breakdown (Principal, Interest, Taxes, Insurance)",
+        "Interactive donut chart visualizations",
+        "Privacy-first: No data storage or transmission",
+        "Typewriter interactive input guidance"
+      ],
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
     }
-  }
-  </script>
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [{
+        "@type": "Question",
+        "name": "How is my monthly mortgage payment calculated?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "The monthly payment is calculated using the standard amortization formula: M = P [ i(1 + i)^n ] / [ (1 + i)^n – 1 ]. It includes Principal and Interest, plus estimated property taxes, homeowners insurance, and HOA fees."
+        }
+      }, {
+        "@type": "Question",
+        "name": "Does this calculator store my financial data?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "No. Mortgage Payoff Lab is a privacy-first application. All calculations are performed locally in your browser, and no data is ever transmitted to a server or stored permanently."
+        }
+      }, {
+        "@type": "Question",
+        "name": "What does PITI stand for?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "PITI stands for Principal, Interest, Taxes, and Insurance. These are the four components of a standard monthly mortgage payment."
+        }
+      }]
+    }
+    </script>
 
     <link rel="stylesheet" href="style.css">
 
@@ -66,7 +102,7 @@
                 <a href="#calculator" class="nav-item active">Calculator</a>
                 <a href="#guide" class="nav-item">Guide</a>
                 <a href="#tips" class="nav-item">Tips</a>
-                <button class="nav-btn">Get Started</button>
+                <button class="nav-btn" id="getStartedBtn">Get Started</button>
             </nav>
             <div class="mobile-menu-btn">
                 <i class="fas fa-bars"></i>
@@ -84,7 +120,7 @@
                 <label for="price">Home Price ($)</label>
                 <div class="input-wrapper">
                     <i class="fas fa-home"></i>
-                    <input type="text" id="price" placeholder="450,000" aria-label="Home Purchase Price">
+                    <input type="text" id="price" placeholder="" aria-label="Home Purchase Price">
                 </div>
             </div>
 
@@ -195,8 +231,7 @@
     </main>
 
     <!-- SEO Content Section -->
-    <section class="seo-content" id="guide"
-        style="max-width: 1000px; padding: 40px; color: var(--text-muted); line-height: 1.8;">
+    <section class="seo-content" id="guide">
         <h2 style="color: #fff; font-family: 'Outfit', sans-serif; margin-bottom: 20px;">
             Mortgage Payment Calculator
         </h2>
@@ -229,6 +264,33 @@
                 <p><strong>Pay extra principal:</strong> Even small extra payments can reduce interest and shorten
                     payoff time
                     (coming soon in Mortgage Payoff Lab).</p>
+            </div>
+        </div>
+
+        <!-- FAQ Section for AI Chatbots & SEO -->
+        <div class="faq-section" style="margin-top: 60px;">
+            <h3 style="color: #fff; margin-bottom: 25px;">Frequently Asked Questions</h3>
+            <div style="display: grid; gap: 20px;">
+                <div
+                    style="background: var(--glass); padding: 25px; border-radius: 16px; border: 1px solid var(--glass-border);">
+                    <h4 style="color: #fff; margin-bottom: 10px;">How accurate is this mortgage calculator?</h4>
+                    <p style="font-size: 0.95rem;">Our calculator uses the industry-standard amortization formula used
+                        by banks and lenders. However, final loan terms depend on your specific lender, credit score,
+                        and local tax rates.</p>
+                </div>
+                <div
+                    style="background: var(--glass); padding: 25px; border-radius: 16px; border: 1px solid var(--glass-border);">
+                    <h4 style="color: #fff; margin-bottom: 10px;">Should I choose a 15-year or 30-year term?</h4>
+                    <p style="font-size: 0.95rem;">A 30-year term offers lower monthly payments, while a 15-year term
+                        helps you pay off the home faster and saves you significant money in total interest over the
+                        life of the loan.</p>
+                </div>
+                <div
+                    style="background: var(--glass); padding: 25px; border-radius: 16px; border: 1px solid var(--glass-border);">
+                    <h4 style="color: #fff; margin-bottom: 10px;">Is my information private?</h4>
+                    <p style="font-size: 0.95rem;">Yes. Unlike many financial tools, we do not require a login or
+                        collect your data. Everything stays in your browser.</p>
+                </div>
             </div>
         </div>
 

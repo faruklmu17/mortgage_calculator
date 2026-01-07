@@ -155,7 +155,7 @@ body {
 /* --- Layout Wrapper (adjusted) --- */
 .calculator-wrapper {
     width: 100%;
-    max-width: 1000px;
+    max-width: 1200px;
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 30px;
@@ -373,11 +373,14 @@ select:focus {
 }
 
 .seo-content {
+    width: 100%;
+    max-width: 1200px;
     margin-top: 60px;
     animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.2s forwards;
     opacity: 0;
-    padding: 0 20px;
-    /* Added padding */
+    padding: 40px 20px;
+    color: var(--text-muted);
+    line-height: 1.8;
 }
 
 .seo-content h2 {

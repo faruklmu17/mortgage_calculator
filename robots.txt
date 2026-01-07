@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://faruklmu17.github.io/mortgage_calculator/sitemap.xml
+Sitemap: https://mortgagepayofflab.com/sitemap.xml

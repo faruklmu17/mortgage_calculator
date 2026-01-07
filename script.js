@@ -184,6 +184,12 @@ document.addEventListener('DOMContentLoaded', function () {
   // Button should work
   calcBtn.addEventListener('click', calculate);
 
+  // Get Started button functionality
+  document.getElementById('getStartedBtn').addEventListener('click', () => {
+    priceInput.focus();
+    priceInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+
   // Event Listeners for real-time updates
   [priceInput, downPaymentInput, rateInput, taxInput, insuranceInput, hoaInput, termInput].forEach(field => {
     field.addEventListener('input', calculate);
@@ -231,6 +237,46 @@ document.addEventListener('DOMContentLoaded', function () {
       }, 400);
     }, 800);
   }
+
+  // Placeholder Typewriter Animation
+  function initTypewriter() {
+    const text = "Enter your home price here...";
+    let charIndex = 0;
+    let isDeleting = false;
+    let typeSpeed = 150;
+
+    function type() {
+      // Stop and Reset if user has typed something or the field is focused
+      if (priceInput.value !== "" || document.activeElement === priceInput) {
+        priceInput.placeholder = text;
+        setTimeout(type, 1000); // Check again in 1s
+        return;
+      }
+
+      const currentText = isDeleting
+        ? text.substring(0, charIndex--)
+        : text.substring(0, charIndex++);
+
+      priceInput.placeholder = currentText + (isDeleting ? "" : "|");
+
+      if (!isDeleting && charIndex > text.length) {
+        isDeleting = true;
+        typeSpeed = 3000; // Long pause at full message
+      } else if (isDeleting && charIndex < 0) {
+        isDeleting = false;
+        charIndex = 0;
+        typeSpeed = 500; // Pause before restarting
+      } else {
+        typeSpeed = isDeleting ? 50 : 100;
+      }
+
+      setTimeout(type, typeSpeed);
+    }
+
+    type();
+  }
+
+  initTypewriter();
 
   // Run demo only once per visitor (recommended)
   function runDemoOnce() {
