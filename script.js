@@ -364,14 +364,14 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   function runMagicDemo() {
-    const demoKey = "mpl_magic_demo_v3"; // Renamed to force reset
+    const demoKey = "mpl_magic_demo_v4"; // Renamed to force reset
     if (localStorage.getItem(demoKey) === "1") return;
 
     console.log("Starting Extra Payment Magic Demo...");
 
     const demoData = [
       { el: magicPrice, val: "600,000" },
-      { el: magicBalance, val: "580,000" },
+      { el: magicBalance, val: "450,000" }, // Fixed: Balance should be less than Original Principal (480k)
       { el: magicDownPayment, val: "120,000" },
       { el: magicRate, val: "6.5" },
       { el: magicTerm, val: "30" },
