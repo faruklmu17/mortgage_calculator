@@ -99,9 +99,13 @@
                 <span>Mortgage Payoff Lab</span>
             </a>
             <nav class="nav-links">
-                <a href="#calculator" class="nav-item active">Calculator</a>
+                <a href="#calculator" class="nav-item active" id="navCalc">Calculator</a>
+                <a href="#extra-magic" class="nav-item" id="navExtra">
+                    <i class="fas fa-wand-magic-sparkles" style="margin-right: 5px; color: var(--secondary);"></i>
+                    Extra Payment Magic
+                    <span class="nav-badge">NEW</span>
+                </a>
                 <a href="#guide" class="nav-item">Guide</a>
-                <a href="#tips" class="nav-item">Tips</a>
                 <button class="nav-btn" id="getStartedBtn">Get Started</button>
             </nav>
             <div class="mobile-menu-btn">
@@ -229,6 +233,233 @@
             </div>
         </aside>
     </main>
+
+    <!-- Extra Payment Magic Section -->
+    <main class="calculator-wrapper" id="extra-magic-section" style="display: none;">
+        <!-- Input Section -->
+        <article class="calc-card">
+            <div class="badge"
+                style="background: var(--primary); color: white; padding: 4px 12px; border-radius: 99px; font-size: 0.75rem; font-weight: 700; display: inline-block; margin-bottom: 12px;">
+                NEW FEATURE</div>
+            <h1>Extra Payment <span style="color: var(--secondary);">Magic</span></h1>
+            <p class="subtitle">See how much time and interest you can save by paying a little extra.</p>
+
+            <div class="row">
+                <div class="input-group">
+                    <label for="magicPrice">Original Home Price ($)</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-home"></i>
+                        <input type="text" id="magicPrice" placeholder="525,000" aria-label="Home Purchase Price">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label for="magicBalance">Current Loan Balance ($)</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-money-bill-trend-up" style="color: var(--secondary);"></i>
+                        <input type="text" id="magicBalance" placeholder="515,000" aria-label="Current Loan Balance">
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="input-group">
+                    <label for="magicDownPayment">Down Payment ($)</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-hand-holding-usd"></i>
+                        <input type="text" id="magicDownPayment" placeholder="105,000" aria-label="Down Payment Amount">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label for="magicRate">Interest Rate (%)</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-percentage"></i>
+                        <input type="text" id="magicRate" placeholder="6.5" aria-label="Annual Interest Rate">
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="input-group">
+                    <label for="magicTerm">Loan Term (Years)</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-calendar-alt"></i>
+                        <select id="magicTerm" aria-label="Loan Term in Years">
+                            <option value="15">15 Years</option>
+                            <option value="30" selected>30 Years</option>
+                            <option value="20">20 Years</option>
+                            <option value="10">10 Years</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label for="magicTax">Property Tax (Annual $)</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-landmark"></i>
+                        <input type="text" id="magicTax" placeholder="5,500" aria-label="Annual Property Tax">
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="input-group">
+                    <label for="magicInsurance">Home Insurance (Annual $)</label>
+                    <div class="input-wrapper">
+                        <i class="fas fa-shield-alt"></i>
+                        <input type="text" id="magicInsurance" placeholder="1,200"
+                            aria-label="Annual Homeowners Insurance">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <div class="label-row"
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <label for="extraAmount" style="margin-bottom: 0;">Extra Payment</label>
+                        <div class="toggle-group" style="display: flex; gap: 5px;">
+                            <button type="button" class="toggle-btn active" id="extraMonthlyBtn">Monthly</button>
+                            <button type="button" class="toggle-btn" id="extraOneTimeBtn">One-time</button>
+                        </div>
+                    </div>
+                    <div class="input-wrapper">
+                        <i class="fas fa-magic" style="color: var(--secondary);"></i>
+                        <input type="text" id="extraAmount" placeholder="200" aria-label="Extra Payment Amount">
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-calc" id="magicCalcBtn" type="button" style="background: var(--secondary);">
+                <i class="fas fa-wand-magic-sparkles"></i>
+                Calculate Savings
+            </button>
+
+            <div id="magicErrorMsg" class="error-msg" role="alert"></div>
+        </article>
+
+        <aside class="results-card">
+            <div class="calc-card"
+                style="background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.2); text-align: center;">
+                <div class="payment-label" style="color: var(--secondary);">Total Interest Saved</div>
+                <div class="payment-amount" id="interestSaved" style="color: var(--secondary);">$0</div>
+                <div class="pi-sub-label" style="font-size: 1rem; color: #fff; margin-top: 10px; font-weight: 600;">
+                    Time Saved: <span id="timeSaved" style="color: var(--secondary);">0 years</span>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card" style="border-color: var(--glass-border);">
+                    <div class="label">Normally Remaining</div>
+                    <div class="value" id="standardRemaining" style="color: var(--text-muted);">30 Years</div>
+                </div>
+                <div class="stat-card" style="border-color: var(--secondary);">
+                    <div class="label">New Payoff Time</div>
+                    <div class="value" id="newPayoffTime">30 Years</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Original Interest</div>
+                    <div class="value" id="originalInterest">$0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">New Total Interest</div>
+                    <div class="value" id="newTotalInterest">$0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">New Monthly PITI</div>
+                    <div class="value" id="newTotalMonthly">$0</div>
+                </div>
+            </div>
+
+            <div class="chart-container"
+                style="display: flex; align-items: center; justify-content: center; flex-direction: column; text-align: center; gap: 15px;">
+                <div id="savingsMessage" style="font-size: 1.1rem; line-height: 1.5;">
+                    Enter your details to see the magic happen!
+                </div>
+                <i class="fas fa-piggy-bank"></i>
+            </div>
+            </div>
+        </aside>
+    </main>
+
+    <!-- Extra Payment Magic SEO & FAQ -->
+    <section class="seo-content" id="extra-magic-guide" style="display: none; margin-top: 0;">
+        <h2 style="color: #fff; font-family: 'Outfit', sans-serif; margin-bottom: 20px;">
+            The Magic of Extra Mortgage Payments
+        </h2>
+
+        <p>
+            Ever wonder how some homeowners manage to pay off a 30-year mortgage in just 15 or 20 years? The secret is
+            <strong>Principal Acceleration</strong>. By paying even a small amount extra each month, you directly reduce
+            the loan's balance, which stops interest from ever being generated on that money.
+        </p>
+
+        <div
+            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; margin-top: 40px; margin-bottom: 40px;">
+            <div
+                style="background: var(--glass); padding: 30px; border-radius: 20px; border: 1px solid var(--glass-border);">
+                <h3 style="color: var(--secondary); margin-bottom: 15px;"><i class="fas fa-microchip"
+                        style="margin-right: 10px;"></i>How Our Logic Works</h3>
+                <p style="font-size: 0.95rem; margin-bottom: 15px;">Unlike basic calculators, the <strong>Mortgage
+                        Payoff Lab</strong> uses a dynamic simulation engine:</p>
+                <ul style="padding-left: 0; font-size: 0.9rem;">
+                    <li style="margin-bottom: 12px;"><strong>Step 1: Velocity Check.</strong> We use your original loan
+                        terms to find your "Locked-in" monthly P&I payment.</li>
+                    <li style="margin-bottom: 12px;"><strong>Step 2: The Baseline.</strong> We simulate the remaining
+                        life of your loan starting from your <strong>Current Balance</strong> using only that fixed
+                        payment. This determines your "Normally Remaining" time.</li>
+                    <li style="margin-bottom: 12px;"><strong>Step 3: The Spark.</strong> We run a second simulation
+                        adding your extra payment. This creates the "Accelerated Timeline."</li>
+                </ul>
+            </div>
+            <div
+                style="background: var(--glass); padding: 30px; border-radius: 20px; border: 1px solid var(--glass-border);">
+                <h3 style="color: var(--primary); margin-bottom: 15px;"><i class="fas fa-lightbulb"
+                        style="margin-right: 10px;"></i>Pro Tip: Start Early</h3>
+                <p style="font-size: 0.95rem;">Because of how <strong>Amortization</strong> works, more of your payment
+                    goes toward interest in the early years. Paying extra in the first 10 years of your loan has a much
+                    larger impact on total interest savings than paying extra in the final years.</p>
+                <div
+                    style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--glass-border); font-style: italic; font-size: 0.85rem;">
+                    "Every $1 you pay toward your principal today is like saving $1 to $2 in future interest depending
+                    on your rate."
+                </div>
+            </div>
+        </div>
+
+        <div class="faq-section">
+            <h3 style="color: #fff; margin-bottom: 25px;">Frequently Asked Questions</h3>
+            <div style="display: grid; gap: 20px;">
+                <div
+                    style="background: var(--glass); padding: 25px; border-radius: 16px; border: 1px solid var(--glass-border);">
+                    <h4 style="color: #fff; margin-bottom: 10px;">Does an extra payment go towards principal or
+                        interest?</h4>
+                    <p style="font-size: 0.95rem;">Most lenders apply extra payments directly to the <strong>Principal
+                            Balance</strong>. This is powerful because interest is calculated as a percentage of your
+                        remaining balance—lower balance equals less interest charged next month.</p>
+                </div>
+                <div
+                    style="background: var(--glass); padding: 25px; border-radius: 16px; border: 1px solid var(--glass-border);">
+                    <h4 style="color: #fff; margin-bottom: 10px;">Can I start making extra payments if I'm already years
+                        into my loan?</h4>
+                    <p style="font-size: 0.95rem;">Yes! That is why our calculator asks for your <strong>Current Loan
+                            Balance</strong>. You can start accelerating your payoff at any point, even if you only have
+                        5 years left. The "magic" happens as soon as you start.</p>
+                </div>
+                <div
+                    style="background: var(--glass); padding: 25px; border-radius: 16px; border: 1px solid var(--glass-border);">
+                    <h4 style="color: #fff; margin-bottom: 10px;">Is it better to pay a lump sum or add to my monthly
+                        payment?</h4>
+                    <p style="font-size: 0.95rem;">Mathematically, the sooner the money hits the loan, the more interest
+                        you save. A <strong>One-time Payment</strong> today will save more interest than spreading the
+                        same amount over 12 months, because the balance drops immediately.</p>
+                </div>
+                <div
+                    style="background: var(--glass); padding: 25px; border-radius: 16px; border: 1px solid var(--glass-border);">
+                    <h4 style="color: #fff; margin-bottom: 10px;">Is there a penalty for paying off my mortgage early?
+                    </h4>
+                    <p style="font-size: 0.95rem;">Most modern residential mortgages in the U.S. do not have prepayment
+                        penalties. However, always check your specific loan documents or call your lender to be 100%
+                        sure before making large lump-sum payments.</p>
+                </div>
+            </div>
+        </div>
+    </section>
 
     <!-- SEO Content Section -->
     <section class="seo-content" id="guide">

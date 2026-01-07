@@ -119,6 +119,53 @@ body {
     font-weight: 500;
     font-size: 0.95rem;
     transition: color 0.2s ease;
+    display: flex;
+    align-items: center;
+    position: relative;
+    gap: 4px;
+}
+
+.nav-badge {
+    background: linear-gradient(90deg, #818cf8, #c084fc);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 6px;
+    margin-left: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    box-shadow: 0 0 10px rgba(192, 132, 252, 0.4);
+    animation: bounceBadge 2s infinite;
+}
+
+@keyframes bounceBadge {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-3px);
+    }
+}
+
+#navExtra {
+    animation: glimmer 3s ease-in-out infinite;
+}
+
+@keyframes glimmer {
+
+    0%,
+    100% {
+        filter: brightness(1);
+    }
+
+    50% {
+        filter: brightness(1.5);
+        text-shadow: 0 0 15px rgba(129, 140, 248, 0.4);
+    }
 }
 
 .nav-item:hover,
@@ -581,4 +628,72 @@ select:focus {
 
 .transparency-section ul li {
     margin-bottom: 8px;
+}
+
+/* Extra Payment Magic Specific Styles */
+.badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 99px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4);
+    }
+
+    70% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 10px rgba(79, 70, 229, 0);
+    }
+
+    100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(79, 70, 229, 0);
+    }
+}
+
+#extra-magic-section .calc-card h1 span {
+    color: var(--secondary) !important;
+}
+
+#extra-magic-section .btn-calc {
+    background: var(--secondary);
+}
+
+#extra-magic-section .btn-calc:hover {
+    background: #059669;
+    /* darker secondary */
+    box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.4);
+}
+
+#savingsMessage strong {
+    color: #fff;
+    font-weight: 700;
+}
+
+/* Smooth Transition for Sections */
+.calculator-wrapper {
+    transition: opacity 0.4s ease, transform 0.4s ease;
+}
+
+#extraAmount {
+    color: var(--secondary);
+    font-weight: 700;
+}
+
+#extraAmount::placeholder {
+    color: rgba(16, 185, 129, 0.4);
+}
+
+#extraAmount:focus {
+    border-color: var(--secondary);
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
 }
