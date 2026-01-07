@@ -365,7 +365,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function runMagicDemo() {
     const demoKey = "mpl_magic_demo_v4"; // Renamed to force reset
-    if (localStorage.getItem(demoKey) === "1") return;
+    if (sessionStorage.getItem(demoKey) === "1") return;
 
     console.log("Starting Extra Payment Magic Demo...");
 
@@ -382,7 +382,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function typeField(index, charIdx) {
       if (index >= demoData.length) {
-        localStorage.setItem(demoKey, "1");
+        sessionStorage.setItem(demoKey, "1");
         // Add a soft glow to results to signal completion
         const results = document.querySelector('#extra-magic-section .results-card');
         if (results) {
@@ -552,8 +552,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Run demo only once per visitor (recommended)
   function runDemoOnce() {
-    if (localStorage.getItem("mpl_demo_seen") === "1") return;
-    localStorage.setItem("mpl_demo_seen", "1");
+    if (sessionStorage.getItem("mpl_demo_seen") === "1") return;
+    sessionStorage.setItem("mpl_demo_seen", "1");
     runDemo();
   }
 
