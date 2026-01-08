@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const magicTerm = document.getElementById('magicTerm');
   const magicTax = document.getElementById('magicTax');
   const magicInsurance = document.getElementById('magicInsurance');
+  const magicMonthlyPI = document.getElementById('magicMonthlyPI');
   const extraAmountInput = document.getElementById('extraAmount');
   const magicCalcBtn = document.getElementById('magicCalcBtn');
   const magicErrorMsg = document.getElementById('magicErrorMsg');
@@ -214,7 +215,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  function calculateMagic() {
+  function calculateMagic(isPIOverride = false) {
     magicErrorMsg.style.display = 'none';
 
     const price = parseInput(magicPrice.value);
@@ -240,7 +241,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Standard Monthly PI (calculated from ORIGINAL principal)
     const x = Math.pow(1 + rate, termMonths);
-    const standardMonthlyPI = (originalPrincipal * x * rate) / (x - 1);
+    const calculatedPI = (originalPrincipal * x * rate) / (x - 1);
+
+    // Use manually entered PI if present and we're not auto-updating from core fields
+    let standardMonthlyPI = parseInput(magicMonthlyPI.value);
+    if (standardMonthlyPI <= 0 || !isPIOverride) {
+      standardMonthlyPI = calculatedPI;
+      // Only update the input field if it's not currently focused
+      if (document.activeElement !== magicMonthlyPI) {
+        magicMonthlyPI.value = Math.round(standardMonthlyPI).toLocaleString();
+      }
+    }
 
     // First, simulate standard payoff starting from startingBalance to get baseline interest
     let baselineInterest = 0;
@@ -427,9 +438,15 @@ document.addEventListener('DOMContentLoaded', function () {
   // Magic Section Event Listeners
   magicCalcBtn.addEventListener('click', calculateMagic);
 
-  [magicPrice, magicDownPayment, magicBalance, magicRate, magicTerm, magicTax, magicInsurance, extraAmountInput].forEach(field => {
-    field.addEventListener('input', calculateMagic);
+  [magicPrice, magicDownPayment, magicRate, magicTerm].forEach(field => {
+    field.addEventListener('input', () => calculateMagic(false));
   });
+
+  [magicBalance, magicTax, magicInsurance, extraAmountInput].forEach(field => {
+    field.addEventListener('input', () => calculateMagic(true));
+  });
+
+  magicMonthlyPI.addEventListener('input', () => calculateMagic(true));
 
   extraMonthlyBtn.addEventListener('click', () => {
     extraMode = 'monthly';
@@ -446,7 +463,7 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   // Share values for blur formatting
-  [magicPrice, magicDownPayment, magicBalance, magicTax, magicInsurance, extraAmountInput].forEach(input => {
+  [magicPrice, magicDownPayment, magicBalance, magicTax, magicInsurance, extraAmountInput, magicMonthlyPI].forEach(input => {
     input.addEventListener('blur', (e) => {
       const val = parseInput(e.target.value);
       if (val > 0) e.target.value = val.toLocaleString('en-US');

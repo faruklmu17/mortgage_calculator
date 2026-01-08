@@ -246,18 +246,34 @@
 
             <div class="row">
                 <div class="input-group">
-                    <label for="magicPrice">Original Home Price ($)</label>
+                    <label for="magicTerm">Original Loan Term (Years)</label>
                     <div class="input-wrapper">
-                        <i class="fas fa-home"></i>
-                        <input type="text" id="magicPrice" placeholder="525,000" aria-label="Home Purchase Price">
+                        <i class="fas fa-calendar-alt"></i>
+                        <input type="text" id="magicTerm" placeholder="30" aria-label="Original Loan Term">
                     </div>
                 </div>
                 <div class="input-group">
-                    <label for="magicBalance">Current Loan Balance ($)</label>
+                    <label for="magicMonthlyPI" style="display: flex; align-items: center; gap: 6px;">
+                        Monthly P&I Payment ($)
+                        <div class="tooltip-container">
+                            <i class="fas fa-info-circle"
+                                style="font-size: 0.8rem; cursor: help; color: var(--text-muted);"></i>
+                            <span class="tooltip-text">We calculated this based on your original loan. Change this if
+                                your actual monthly payment is different.</span>
+                        </div>
+                    </label>
                     <div class="input-wrapper">
-                        <i class="fas fa-money-bill-trend-up" style="color: var(--secondary);"></i>
-                        <input type="text" id="magicBalance" placeholder="515,000" aria-label="Current Loan Balance">
+                        <i class="fas fa-file-invoice-dollar" style="color: var(--primary);"></i>
+                        <input type="text" id="magicMonthlyPI" placeholder="2,500"
+                            aria-label="Monthly Principal and Interest">
                     </div>
+                </div>
+            </div>
+            <div class="input-group">
+                <label for="magicBalance">Current Loan Balance ($)</label>
+                <div class="input-wrapper">
+                    <i class="fas fa-money-bill-trend-up" style="color: var(--secondary);"></i>
+                    <input type="text" id="magicBalance" placeholder="515,000" aria-label="Current Loan Balance">
                 </div>
             </div>
 
@@ -345,7 +361,16 @@
 
             <div class="stats-grid">
                 <div class="stat-card" style="border-color: var(--glass-border);">
-                    <div class="label">Normally Remaining</div>
+                    <div class="label" style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+                        Normally Remaining
+                        <div class="tooltip-container">
+                            <i class="fas fa-info-circle"
+                                style="font-size: 0.8rem; cursor: help; color: var(--text-muted);"></i>
+                            <span class="tooltip-text">Forward-looking simulation: Based on your current balance and
+                                original fixed P&I payment. This is the exact time left if you make no more extra
+                                payments.</span>
+                        </div>
+                    </div>
                     <div class="value" id="standardRemaining" style="color: var(--text-muted);">30 Years</div>
                 </div>
                 <div class="stat-card" style="border-color: var(--secondary);">
