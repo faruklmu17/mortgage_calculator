@@ -1,185 +1,55 @@
-# 🏠 Mortgage Payoff Lab
+# Mortgage Calculator Web Page (UPDATED)
 
-> A privacy-first, client-side mortgage calculator that estimates your monthly **PITI** payment (Principal, Interest, Taxes, Insurance) and shows exactly how much time and interest you can save by making extra payments.
+This web page is designed to help users understand their mortgage payments and financial planning. It includes a variety of features to assist users in calculating their monthly payments and exploring different scenarios with extra payments.
 
-**Live site:** [https://mortgagepayofflab.com](https://mortgagepayofflab.com)
+## Contents
 
----
+### SEO and Meta Tags
+These tags are used for search engine optimization, ensuring the page is indexed correctly.
 
-## ✨ Features
+### Head Section
+Includes all the HTML meta tags and links to external CSS and JavaScript files, setting up the basic page structure.
 
-### 🧮 Monthly Payment Calculator
-- Estimate your total **PITI** (Principal, Interest, Taxes, Insurance) + HOA fees.
-- **Down payment** toggle — enter as a flat dollar amount **or** a percentage.
-- Real-time recalculation as you type (no "submit" wait).
-- Interactive **donut chart** breakdown of where every dollar goes (P&I / Taxes / Insurance / HOA).
-- Stats: principal loan amount, total interest, monthly taxes & fees, total payoff cost.
-- Auto-formatting of currency values and friendly validation messages.
+### Header Section
+Contains the main navigation links, including the Calculator, Extra Payment Magic, Guide, and Get Started sections.
 
-### 🪄 Extra Payment Magic (NEW)
-- See exactly how much **interest** and **time** you save by adding a little extra.
-- Choose between a **monthly** extra payment or a **one-time lump sum**.
-- Works from any point in your loan — enter your **current balance** and we simulate forward.
-- Side-by-side: *Normally Remaining* vs. *New Payoff Time*, *Original Interest* vs. *New Total Interest*.
-- Auto-syncs values from the main calculator when you switch tabs.
-- Guided typewriter demo on first visit so first-time users immediately see the "magic."
+### Calculator Section
+This is where users can input their mortgage details such as home price, down payment, interest rate, loan term, etc., and see the calculated monthly payments and other details.
 
-### 🛡️ Privacy-First
-- **100% client-side.** No accounts, no tracking cookies, no data leaves your browser.
-- Only `sessionStorage` is used to remember that the intro demo has already played.
+### Results Section
+Displays the calculated monthly payment, total principal and interest amounts, and provides links to a chart visualization.
 
-### 📈 SEO & AI-Ready
-- JSON-LD structured data (`SoftwareApplication` + `FAQPage`).
-- Open Graph & Twitter Card tags.
-- `robots.txt`, `sitemap.xml`, and a Google verification file.
-- FAQ and educational sections written for humans **and** AI chatbots.
+### Extra Payment Magic Section
+This advanced section allows users to input details to see how extra payments can reduce their mortgage term.
 
-### 🎨 Modern UI
-- Glassmorphism design system, smooth fade-in animations, and a sticky blurred header.
-- Fully responsive: desktop grid layout collapses gracefully on tablets and phones.
-- Custom typewriter placeholder animation to guide first-time input.
+### SEO and FAQ Section
+Contains additional SEO meta tags and links to resources and FAQs for the calculator.
 
----
+### Footer Section
+Includes the copyright information and social media links.
 
-## 🛠 Tech Stack
+## Usage
 
-| Concern    | Choice                                           |
-| ---------- | ------------------------------------------------ |
-| Language   | HTML5 + CSS3 + vanilla JavaScript (no framework) |
-| Charts     | [Chart.js](https://www.chartjs.org/) (CDN)       |
-| Icons      | [Font Awesome 6](https://fontawesome.com/) (CDN) |
-| Fonts      | Google Fonts — *Outfit* + *Inter*                |
-| Hosting    | GitHub Pages (custom domain via `CNAME`)         |
-| Deployment | GitHub Actions (`.github/workflows/deploy.yml`)  |
+1. **Calculator Section**:
+   - Input your mortgage details in the form provided.
+   - The page will automatically calculate and display your monthly payments and other relevant details.
 
-> No build step, no dependencies to install, no `package.json`. It's a static site.
+2. **Extra Payment Magic Section**:
+   - Provide additional details to see how extra payments can affect your mortgage term.
+
+3. **Results Section**:
+   - View the calculated results and charts for better understanding.
+
+4. **Additional Resources**:
+   - Click the "Guide" link to learn more about mortgages and calculators.
+   - Explore the "FAQs" for additional information.
+
+## Contributing
+
+If you find any issues or have suggestions for improvements, please feel free to open an issue or submit a pull request.
 
 ---
 
-## 📁 Project Structure
+This README provides an overview of the features and usage of the Mortgage Calculator Web Page. For detailed instructions and more information, please refer to the relevant sections of the page.
 
-```
-.
-├── index.html                  # Main application page (calculator + magic + SEO content)
-├── script.js                   # All front-end logic (calculations, UI, demos)
-├── style.css                   # Design system, components, responsive rules
-├── privacy.html                # Privacy Policy page
-├── preview.png                 # Social / Open Graph preview image
-├── CNAME                       # Custom domain → mortgagepayofflab.com
-├── robots.txt                  # Crawler rules
-├── sitemap.xml                 # Sitemap for search engines
-├── googleb4f539193a03794c.html # Google Search Console verification
-├── README.md
-└── .github/
-    └── workflows/
-        └── deploy.yml          # GitHub Pages deployment (triggered on `v1` branch)
-```
-
----
-
-## 🧠 How the Math Works
-
-### Standard Mortgage Payment (P&I)
-
-Uses the industry-standard amortization formula:
-
-```
-M = P · [ i(1 + i)^n ] / [ (1 + i)^n – 1 ]
-```
-
-Where:
-- `P` = principal (home price − down payment)
-- `i` = monthly interest rate (annual rate ÷ 100 ÷ 12)
-- `n` = total number of months (term in years × 12)
-- `M` = monthly Principal & Interest payment
-
-The **PITI** monthly total is:
-
-```
-PITI = M + (annual taxes / 12) + (annual insurance / 12) + monthly HOA
-```
-
-### Extra Payment Magic
-
-1. **Velocity check** — compute the fixed monthly P&I from the *original* loan terms.
-2. **Baseline simulation** — walk the loan forward from the *current balance* using only that fixed payment → "Normally Remaining" time and original total interest.
-3. **Accelerated simulation** — walk the loan forward again, adding the extra payment (monthly or one-time) → new payoff time and new total interest.
-4. **Savings** — the difference in interest and time between the two simulations.
-
-Both simulations are capped at 600 months (50 years) as a safety guard against infinite loops with extremely low payments.
-
----
-
-## 🚀 Getting Started
-
-This is a fully static site — **no dependencies to install**. Just open the file:
-
-```bash
-# Option 1: Open directly in your browser
-open index.html          # macOS
-xdg-open index.html      # Linux
-start index.html         # Windows
-```
-
-```bash
-# Option 2: Serve it locally (nicer for development)
-npx serve .
-# or
-python3 -m http.server 8000
-```
-
-Then visit <http://localhost:8000> (or the port your server picked).
-
----
-
-## 📦 Deployment
-
-The repo is set up for **GitHub Pages** on a custom domain.
-
-1. Push changes to the `v1` branch — the workflow in [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) runs automatically.
-2. The custom domain (`mortgagepayofflab.com`) is configured via [`CNAME`](CNAME).
-3. The workflow uploads the entire repo as the Pages artifact and deploys it.
-
-You can also trigger a deployment manually from the GitHub **Actions** tab (`workflow_dispatch`).
-
----
-
-## 🌐 SEO Checklist
-
-- [x] Unique `<title>` and `<meta name="description">`
-- [x] Canonical URL
-- [x] Open Graph (`og:*`) tags for Facebook / Slack / Discord previews
-- [x] Twitter Card (`twitter:*`) tags
-- [x] JSON-LD: `SoftwareApplication` + `FAQPage`
-- [x] `robots.txt` + `sitemap.xml`
-- [x] Google Search Console verification file
-- [x] `CNAME` for custom domain
-- [x] FAQ + educational content on-page (human- and LLM-friendly)
-
----
-
-## 📄 Assumptions & Disclaimers
-
-- Interest is **compounded monthly**.
-- Property taxes and insurance are entered as **annual** figures and divided by 12.
-- HOA is entered as a **monthly** figure.
-- **PMI / mortgage insurance** is **not** included.
-- Estimates are for planning purposes only — actual loan terms depend on your lender, credit, and local rates.
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! To keep the project lightweight:
-
-1. Fork the repo.
-2. Create a feature branch (`git checkout -b feat/my-idea`).
-3. Keep the "no build step, no framework" spirit — plain HTML/CSS/JS.
-4. Run the site locally (`open index.html`) and verify your change works.
-5. Open a PR against the `v1` branch (that's the one that deploys to GitHub Pages).
-
----
-
-## 📜 License
-
-© 2025 Mortgage Payoff Lab. See the [Privacy Policy](privacy.html) for how the site handles (i.e. doesn't handle) your data.
+# Trying again...
