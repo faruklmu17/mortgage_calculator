@@ -439,11 +439,11 @@ document.addEventListener('DOMContentLoaded', function () {
   magicCalcBtn.addEventListener('click', calculateMagic);
 
   [magicPrice, magicDownPayment, magicRate, magicTerm].forEach(field => {
-    field.addEventListener('input', () => calculateMagic(false));
+      if (field) field.addEventListener('input', () => calculateMagic(false));
   });
 
   [magicBalance, magicTax, magicInsurance, extraAmountInput].forEach(field => {
-    field.addEventListener('input', () => calculateMagic(true));
+      if (field) field.addEventListener('input', () => calculateMagic(true));
   });
 
   magicMonthlyPI.addEventListener('input', () => calculateMagic(true));
@@ -464,7 +464,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Share values for blur formatting
   [magicPrice, magicDownPayment, magicBalance, magicTax, magicInsurance, extraAmountInput, magicMonthlyPI].forEach(input => {
-    input.addEventListener('blur', (e) => {
+      if (!input) return;
+      input.addEventListener('blur', (e) => {
       const val = parseInput(e.target.value);
       if (val > 0) e.target.value = val.toLocaleString('en-US');
     });
@@ -479,10 +480,10 @@ document.addEventListener('DOMContentLoaded', function () {
     priceInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
   });
 
-  // Event Listeners for real-time updates
-  [priceInput, downPaymentInput, rateInput, taxInput, insuranceInput, hoaInput, termInput].forEach(field => {
-    field.addEventListener('input', calculate);
-  });
+  // Results now update ONLY on button click (live recalc on input disabled)
+  // [priceInput, downPaymentInput, rateInput, taxInput, insuranceInput, hoaInput, termInput].forEach(field => {
+  //   field.addEventListener('input', calculate);
+  // });
 
   // Auto-format currency on input blur
   [priceInput, taxInput, insuranceInput].forEach(input => {
@@ -574,5 +575,5 @@ document.addEventListener('DOMContentLoaded', function () {
     runDemo();
   }
 
-  runDemoOnce();
+  // runDemoOnce();
 });
