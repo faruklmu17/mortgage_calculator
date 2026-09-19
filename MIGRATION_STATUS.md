@@ -10,6 +10,10 @@ The audit is complete, saved to `MIGRATION_AUDIT.md`, and verified against the a
 
 `BASELINE_CASES.md` is created with all 10 reproducible cases from the Step 4 table (plus the down-payment/overpayment sub-cases A9a/A9b/A9c), a deterministic **source-formula reference** for every numeric case, the exact "preserve" behaviors, and 9 explicit "decide before Step 7" items. Per Step 4 ("do not invent observed outputs or claim browser tests were run"), the **browser-observed** column and **all 5 screenshots** are left PENDING because this agent has **no browser access**. The original site is verified to serve locally (HTTP 200 on all assets). **No application files were modified.**
 
+## Step 5: Add Persistent Instructions — ✅ COMPLETE
+
+`AGENTS.md` created at repo root with the exact content specified in `MIGRATION_PLAN.md` Step 5. All five sections (Goal, Scope, Restrictions, React Guidelines, Verification) are present. No prior `AGENTS.md` existed, so no merge was needed. **No application files were modified.**
+
 ## Overall Step Tracking
 
 | Step | Name | Status |
@@ -18,7 +22,8 @@ The audit is complete, saved to `MIGRATION_AUDIT.md`, and verified against the a
 | 2 | Protect the working version (branch) | Not recorded (on `watson` branch; no `react-migration` yet) |
 | 3 | Audit the existing code | ✅ **COMPLETE** |
 | 4 | Capture baseline behavior | ✅ **COMPLETE** (deliverable `BASELINE_CASES.md` created; browser-observed cells + screenshots PENDING — no browser available) |
-| 5 | Add persistent instructions (AGENTS.md) | Not started |
+| 5 | Add persistent instructions (AGENTS.md) | ✅ **COMPLETE** |
+| 6 | Prepare Node.js and Vite | Not started |
 
 ### Files Inspected
 
@@ -75,17 +80,22 @@ The audit is complete, saved to `MIGRATION_AUDIT.md`, and verified against the a
 
 - **`MIGRATION_AUDIT.md`** – Full audit report (17 sections, incl. new Verification Record). Status: ✅ Saved and verified.
 - **`MIGRATION_STATUS.md`** – This file. Status: ✅ Saved.
+- **`BASELINE_CASES.md`** – Baseline behavior cases (10 cases + sub-cases + 9 decisions). Status: ✅ Saved.
+- **`AGENTS.md`** – Persistent instructions for Qwen. Status: ✅ Saved.
 
 ### Files Changed in Latest Step
 
 - `MIGRATION_AUDIT.md` (corrected, expanded, marked COMPLETE — Section 17 added)
-- `MIGRATION_STATUS.md` (this file — Step 3 marked COMPLETE)
+- `MIGRATION_STATUS.md` (this file — Steps 3, 4, 5 marked COMPLETE)
+- `BASELINE_CASES.md` (created — Step 4 deliverable)
+- `AGENTS.md` (created — Step 5 deliverable)
 - **No application/source files were modified.**
 
 ### Next Steps
 
-1. **Step 5 (Add persistent instructions — AGENTS.md)** — not started.
-2. Human: fill the PENDING browser/screenshot cells in `BASELINE_CASES.md` (or run with a browser) before Step 7, and make the 9 decisions in Section F (especially F1: 0% interest).
+1. ~~**Step 5 (Add persistent instructions — AGENTS.md)**~~ — ✅ COMPLETE.
+2. **Step 6 (Prepare Node.js and Vite)** — not started; requires user authorization.
+3. Human: fill the PENDING browser/screenshot cells in `BASELINE_CASES.md` (or run with a browser) before Step 7, and make the 9 decisions in Section F (especially F1: 0% interest).
 
 ---
 
@@ -133,4 +143,46 @@ The audit is complete, saved to `MIGRATION_AUDIT.md`, and verified against the a
 
 ## Next Step
 
-**Step 5 — Add persistent instructions for Qwen** (create `AGENTS.md` at repo root). **Not started** and not requested this turn.
+**Step 6 — Prepare Node.js and Vite** (`package.json`, `vite.config.js`, React setup). **Not started**; requires user authorization to proceed.
+
+---
+
+# Step 5 Detail (this session)
+
+## Step 5: Add Persistent Instructions for Qwen — ✅ COMPLETE
+
+**Deliverable:** `AGENTS.md` (new file at repo root, 1,343 bytes, 43 lines).
+
+**Scope honored:** Step 5 is documentation only. **No application files modified, no branch switched, nothing pushed or deployed.**
+
+## Actions Performed
+
+1. Confirmed no existing `AGENTS.md` in the repository (glob search returned zero matches).
+2. Created `AGENTS.md` at repo root with the **exact content** specified in `MIGRATION_PLAN.md` Step 5 code block:
+   - **Goal** — 1 line
+   - **Scope** — 7 bullets
+   - **Restrictions** — 7 bullets
+   - **React Guidelines** — 7 bullets
+   - **Verification** — 4 bullets
+3. Read back the created file and compared line-by-line against the Step 5 template in `MIGRATION_PLAN.md`. All content matches.
+4. Verified file metadata: 1,343 bytes, 43 lines, correct path (`AGENTS.md` at repo root).
+
+## Files Changed / Created (this step)
+
+- **Created:** `AGENTS.md`
+- **Updated:** `MIGRATION_STATUS.md` (this file — Step 5 marked COMPLETE)
+- Application files: **none** (`index.html`, `script.js`, `style.css`, `privacy.html`, workflow, README all unchanged)
+
+## Verification
+
+| Check | Method | Result |
+|-------|--------|--------|
+| `AGENTS.md` exists at repo root | `file_glob_search` + `read_file` | **PASS** — file present, 43 lines, 1,343 bytes |
+| Content matches Step 5 template | Line-by-line `read_file` comparison against `MIGRATION_PLAN.md` Step 5 code block | **PASS** — all 5 sections (Goal, Scope, Restrictions, React Guidelines, Verification) and all 26 bullets present and identical |
+| No unrelated instructions overwritten | Confirmed no prior `AGENTS.md` existed (glob search: zero matches) | **PASS** — fresh creation, no merge needed |
+| No application files modified | File change list | **PASS** — only `AGENTS.md` and `MIGRATION_STATUS.md` changed |
+
+## Blockers
+
+**None.** Step 5 is a documentation step with no code dependencies.
+
