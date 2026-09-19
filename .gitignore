@@ -15,8 +15,9 @@ dist/
 build/
 .env
 .env.local
+*.local
 
 # Logs
 npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+y
+

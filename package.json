@@ -1,0 +1,37 @@
+{
+  "name": "mortgage-payoff-lab",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A privacy-first, client-side mortgage calculator that estimates your monthly PITI payment and shows how much time and interest you can save with extra payments.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/faruklmu17/mortgage_calculator.git"
+  },
+  "keywords": [
+    "mortgage",
+    "calculator",
+    "piti",
+    "extra-payments",
+    "amortization"
+  ],
+  "author": "Mortgage Payoff Lab",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/faruklmu17/mortgage_calculator/issues"
+  },
+  "homepage": "https://github.com/faruklmu17/mortgage_calculator#readme",
+  "dependencies": {
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^6.1.1",
+    "vite": "^8.3.0"
+  }
+}
