@@ -93,7 +93,118 @@ The audit is complete, saved to `MIGRATION_AUDIT.md`, and verified against the a
 
 ## Next Step
 
-**Step 7 — Extract and test calculation functions** (`src/lib/mortgage.js`, `amortization.js`, `validation.js`, `formatting.js` + Vitest; wire the vanilla UI to them). **Not started.** Blocked on decision **F1**.
+**Step 7 — Extract and test calculation functions** — see the **Step 7 Detail** section below (✅ **COMPLETE** in this session).
+
+## Disposition of decisions carried from Step 6
+
+| Decision | Disposition |
+|----------|-------------|
+| **F1** (0% interest) | **Approved** by the user in this session. Implemented as: (a) `src/lib/mortgage.js` `monthlyPayment` returns `principal/termMonths` when `i === 0`; (b) `src/lib/validation.js#parseInterestRate` distinguishes blank (→ `NaN`, reject) from explicit `"0"` (→ `0`, accept). All Step 7 tests encode this rule. |
+| **F3** (silent-0 non-numeric) | **Preserved** verbatim: `parseNumeric` still returns `0` for `''` / `'abc'` / `'  '`. Documented in the JSDoc. |
+| **F7** (600-month limit) | **Preserved** verbatim: `SIMULATION_MONTH_LIMIT = 600`, `DONE_BALANCE_EPSILON = 0.01`, and `status: 'paid-off' \| 'limit-reached'` are exported as a public enum for Step 10 to render distinctly. |
+
+---
+
+# Step 7 Detail (this session)
+
+## Step 7: Extract and test calculation functions — ✅ COMPLETE
+
+**Scope honored:** The four pure modules were extracted from `script.js` into `src/lib/{mortgage,amortization,validation,formatting}.js`, the vanilla UI was re-wired to import them as ES modules, Vitest was added as a dev dependency + `"test": "vitest run"` script, and a comprehensive test suite exercising the **approved A1 baseline**, the **0% interest rule (F1)**, and all the edge cases enumerated in the Step 7 plan is now green. No push, merge, or deploy.
+
+## Environment
+
+- Node.js: **v25.2.1** (same as Step 6, unchanged)
+- npm: **11.6.2**
+- `vite`: **8.3.0** / `@vitejs/plugin-react`: **6.1.1** (unchanged from Step 6)
+- `vitest`: **4.1.11** (added this step — dev dependency)
+- `react`: **19.3.0** / `react-dom`: **19.3.0** (unchanged)
+
+## Recovery of corrupted worktree files (interrupted session artifact)
+
+The previous session was interrupted mid-write ("500 no user query found in messages"). Inspection on resume revealed **two worktree files were truncated** relative to the prior committed state, while **six other Step-7 files were intact and contained the actual Step-7 work**:
+
+| File | Worktree size | HEAD size | Diagnosis | Action |
+|------|--------------|-----------|-----------|--------|
+| `index.html` | **232 B (9 lines — truncated after first `<link rel="canonical">` fragment)** | 33,710 B / 636 lines | Session interrupted mid-write (no `<body>`, no `</html>`) | **Restored** from `git show HEAD:index.html`, then re-applied the one-step-7 change: `<script src="script.js">` → `<script type="module" src="script.js">` |
+| `src/lib/mortgage.test.js` | **1,309 B (37 lines — ends mid-JSDoc comment, no `describe`)** | not in HEAD (untracked at commit) | Session interrupted mid-write | **Recreated** from scratch with full coverage (see "Test suite" below). |
+| `script.js` | 20,536 B / 578 lines | 579 B / 579 lines (committed version is pre-wiring, pre-imports) | Intact; **the worktree copy is actually the Step-7 version** | **Preserved** (legitimate step-7 work — imports from `./src/lib/*`) |
+| `src/lib/mortgage.js` | 3,966 B / 103 lines | 99 B / (HEAD version is a stub) | Intact, F1-approved zero-interest | **Preserved** |
+| `src/lib/amortization.js` | 3,193 B / 102 lines | 24 B / (HEAD version is a stub, even has a typo `DONE_BALALANCE_EPSILON` — missing value) | Intact, complete `simulatePayoff` + `comparePayoffs` | **Preserved** |
+| `src/lib/validation.js` | 4,820 B / 113 lines | (HEAD version pre-F1) | Intact, F1-approved | **Preserved** |
+| `src/lib/formatting.js` | 1,569 B / 52 lines | (committed at Step 7 commit) | Intact | **Preserved** |
+| `src/lib/amortization.test.js` | 12,915 B / 360 lines | not in HEAD (untracked) | Intact and coherent | **Preserved** |
+
+No destructive git operations were used. `git restore` was used to bring back `index.html`; the rest of the work was an in-place edit replacing the truncated `mortgage.test.js` contents with the full test file.
+
+## Files Changed / Created (this step)
+
+| File | Lines | Purpose |
+|------|-------|---------|
+| `src/lib/mortgage.js` | 103 | Pure math: `monthlyPayment(principal, annualRatePercent, termMonths)` (F1-compatible: rate 0 → principal/term), `calculateMortgage({ price, downPayment, annualRatePercent, termYears, annualTax, annualInsurance, monthlyHoa })` returning the four card values + PITI + `totalPayoff`. Verbatim same formula/order as `script.js#calculate`. **No DOM, no formatting.** |
+| `src/lib/amortization.js` | 102 | `simulatePayoff({ startingBalance, contractualMonthlyPI, annualRatePercent, monthlyExtra=0, oneTimeExtra=0 })` returning `{ status, months, totalInterest, startingBalance, remainingBalance, principalPaid }`, plus `comparePayoffs(...)` wrapper, and `SIMULATION_MONTH_LIMIT = 600` / `DONE_BALANCE_EPSILON = 0.01`. One-time extra applied in **month 1 only**. **No DOM, no formatting.** |
+| `src/lib/validation.js` | 113 | `parseNumeric` (verbatim from `script.js#parseInput`), `parseInterestRate` (F1-aware: blank → `NaN`, `"0"` → `0`, `"-1"` → `-1` preserved for the caller), `VALIDATION_ERROR_MESSAGES` (frozen, verbatim), `validateMainLoan`, `validateMagicLoan`. |
+| `src/lib/formatting.js` | 52 | `formatCurrency` (verbatim `Intl.NumberFormat('en-US', { style:'currency', currency:'USD', maximumFractionDigits:0 })`), `formatDurationSpan(monthsSaved)` ("X years and Y months", "0 months"), `formatShortDuration(months)` (`"Xy Ym"`). **Pure string formatting, no math.** |
+| `src/lib/mortgage.test.js` | 389 / 13,725 B | **Recreated** (was 37-line truncated stub). **46 tests.** Coverage: A1 PI & total interest (exact double equality), A1 principal/term/PITI breakdown, 0% interest ($1,000 / month independent check; 0% on A1 loan; 0% via `calculateMortgage` produces exactly $0 interest), zero principal / zero term, NaN tolerance, PITI components with tax/insurance/HOA, `parseNumeric` semantics, `parseInterestRate` F1 semantics (blank → NaN, `"0"` → 0, negative preserved), `validateMainLoan` (all 4 error paths preserved in original order + F1-0% accepted), `validateMagicLoan` (same F1 + 4-path coverage), `VALIDATION_ERROR_MESSAGES` verbatim + frozen, `formatCurrency` (including `$2,023` for A1's PI, round-half, negatives). |
+| `src/lib/amortization.test.js` | 360 / 12,915 B | **Preserved from interrupted session.** 22 tests. Coverage: A1 360-month payoff + exact interest (within 1e-6), principal reconciliation, 0% three ways, zero balance, NaN, no-extra matches baseline, B4 (200/month → 281 months), B5 (10k one-time → 329 months), one-time > remaining, final payment < regular payment (0% loan of $1,100 / $1050 with $100/month), B6 (balance 200k → 142 / 124 months with/without $200/month extra), `limit-reached` at 600 months, monotone property "positive extra principal never increases payoff time or total interest", `comparePayoffs` deltas (31 months saved on B5). |
+| `script.js` | 578 | **Preserved from interrupted session.** Wired as an ES module to the extracted lib. Removed inline `parseInput` / `formatCurrency` / `monthlyRate` / `Math.pow` / the inline two-`while-loops`; replaced the inline P&I formula with a `calculateMortgage(...)` call and the inline amortization with two `simulatePayoff(...)` calls. Validation order + messages preserved byte-for-byte. |
+| `index.html` | 637 (restored + 1 line) | **Restored from HEAD** (was 232 B truncated in worktree). Only Step-7 diff: `<script src="script.js">` → `<script type="module" src="script.js">` so the `import` statements in `script.js` are valid. All SEO / JSON-LD / FAQ / educational content preserved unchanged. |
+| `package.json` | 39 | **Preserved from interrupted session.** `"type": "module"`, `"test": "vitest run"` script, `vitest@^4.1.11` in `devDependencies`. |
+
+| File | Bytes | Notes |
+|------|-------|-------|
+| `MIGRATION_STATUS.md` | (this file) | Step 7 marked **COMPLETE** with verification evidence. |
+
+## Approved A1 baseline (canonical, no intermediate rounding)
+
+| Field | Approved value |
+|-------|----------------|
+| Price | `$400,000` |
+| Down payment | `$80,000` |
+| Principal | `$320,000` |
+| Rate | `6.5%` |
+| Term | `30` years (`360` months) |
+| **monthly P&I** | **`2022.6176751774892`** |
+| **total interest** | **`408142.3630638961`** |
+
+These are asserted with **exact double equality** in `src/lib/mortgage.test.js` (`expect(...).toBe(...)`) because the original `script.js` and the extracted `calculateMortgage` both use the identical `Math.pow` / `+` / `*` / `/` sequence on the same operand order, so the IEEE-754 result is deterministic and byte-identical.
+
+## Verification (automated)
+
+| Command | Result |
+|---------|--------|
+| `npm test` | **PASS** — 2 files, 68 tests, 0 failures. `src/lib/amortization.test.js` (22) + `src/lib/mortgage.test.js` (46). Vitest 4.1.11 runtime 134 ms. |
+| `npm run build` | **PASS** — `vite v8.3.0`, 9 modules transformed. Output: `dist/index.html` 33.79 kB, `dist/assets/index-W1v8K94i.css` 10.00 kB, `dist/assets/index-CTzdFu4z.js` 10.25 kB, `dist/assets/preview-DbTFoAe-.png` 585.97 kB. No `script.js is not bundled` warning (was present at Step 6 because the script tag wasn't a module yet). |
+| Dev-server wiring check | `npm run dev` + `curl http://localhost:5199/script.js` returns the wired module with `import { calculateMortgage } from "/src/lib/mortgage.js";` etc — proving the vanilla UI is now running against the extracted pure functions, exactly as Step 7's checkpoint requires. |
+| Bundle sanity | Minified `dist/assets/index-*.js` contains the `limit-reached` / `paid-off` status strings and `contractualMonthlyPI` argument key (both defined in `src/lib/amortization.js`) — proving the lib is actually in the production output (Vest minify renames identifiers but preserves string literals). |
+
+> Note: `dist/` was created by the `npm run build` check and removed afterward, consistent with the Step 6 practice. Production-asset preservation is a Step 13 concern; this step only proves the config is valid.
+
+## Verification (manual / browser) — PENDING
+
+Per Step 7 checkpoint ("the vanilla UI uses tested calculation modules, and discrepancies are understood"): the *calculation modules* are verified by 68 unit tests against the A1 baseline and all edge cases. However, the *visual* Step-7 checkpoint (the page opens, the "Calculate My Payment" button produces A1-style output in the browser, the Extra Payment Magic tab produces the B5/B6-style accelerated numbers) requires a real browser. I do not have browser access. The following still need to be confirmed by the maintainer:
+
+- [ ] Open `http://localhost:5173` via `npm run dev`.
+- [ ] Type A1 inputs (price 400000, down 80000, rate 6.5, term 30) and click **Calculate My Payment**. Expected: P&I ≈ **`$2,023`**, Total Interest ≈ **`$408,142`**, Principal Loan `($320,000)`, Total Payoff ≈ **`$728,142`** (PI + 0 taxes).
+- [ ] Verify 0% rate now **calculates** (F1): price 120000, down 0, rate 0, term 10 → monthly payment `$1,000`, interest `$0`.
+- [ ] Switch to **Extra Payment Magic** tab, enter `magicPrice=600000`, `magicDownPayment=120000`, `magicBalance=450000`, `magicRate=6.5`, `magicTerm=30`, `extraAmount=500` (monthly) — verify the accelerated number is earlier than the baseline and `Interest Saved` is positive.
+- [ ] Verify validation messages unchanged: blank rate → "Please enter a valid interest rate and term.", price blank → "Please enter a valid home price.", down >= price → "Down payment must be less than the home price."
+- [ ] Verify the donut chart still renders (Chart.js remains from the CDN as a global; the extracted lib doesn't touch it).
+- [ ] Verify the intro typewriter / magic-demo behaviours are unchanged (`sessionStorage` still keys `mpl_magic_demo_v4` / `mpl_demo_seen`).
+
+## Decisions
+
+- **F1** — 0% interest is a **valid** rate (explicit `"0"` / `"0.0"` accepted; blank / non-numeric / negative / non-finite rejected). `0%` is treated as a zero-interest loan: `P&I = principal / termMonths`, total interest is exactly `$0`. Encoded in 8+ tests across `mortgage.test.js`.
+- **F3** — non-numeric text (e.g. `"abc"`, `''`) silently coerces to `0` via `parseNumeric`. This is **preserved**: the UI layer (Step 9) continues to rely on this to make clear/blur behavior work.
+- **F7** — 600-month limit produces `'limit-reached'` status, surfaced distinctly in `status` (not hidden as a bogus `'paid-off'`). Step 10 will render a clear non-success result based on this enum.
+- **Extracted functions remain pure** — none of the four libs reference `document`, `window`, `React`, or `sessionStorage`. They can be imported by the React layer (Steps 8–10) without DOM shims.
+
+## Blockers
+
+**None for Step 7.** The only pending items are the manual browser checks above (Step 14 will cover them comprehensively as part of the production parity checklist).
+
+## Next Step
+
+**Step 8 — Create the React boundary and shared state.** Introduce a single React root around both calculator tabs (keeping header / FAQ / guide / JSON-LD outside), with `CalculatorApp` → `CalculatorTabs` → `{PaymentCalculator, ExtraPaymentCalculator}`, and define which inputs are shared between tabs. The pure modules in `src/lib/` are now the source of truth — Step 8 will *bind* them into React state without duplicating the math.
 
 ## Overall Step Tracking
 
@@ -105,7 +216,8 @@ The audit is complete, saved to `MIGRATION_AUDIT.md`, and verified against the a
 | 4 | Capture baseline behavior | ✅ **COMPLETE** (deliverable `BASELINE_CASES.md` created; browser-observed cells + screenshots PENDING — no browser available) |
 | 5 | Add persistent instructions (AGENTS.md) | ✅ **COMPLETE** |
 | 6 | Prepare Node.js and Vite | ✅ **COMPLETE** (existing site verified running through `npm run dev`) |
-| 7 | Extract and test calculation functions | Not started (decision F1 still open) |
+| 7 | Extract and test calculation functions | ✅ **COMPLETE** (4 pure modules + Vitest suite, 68 tests pass, vanilla UI re-wired as ES module) |
+| 8 | Create the React boundary and shared state | Not started (next) |
 
 ### Files Inspected
 

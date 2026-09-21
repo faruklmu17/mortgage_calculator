@@ -1,4 +1,4 @@
-/**
+  /**
  * Pure mortgage-payment calculation functions.
  *
  * Extracted verbatim from `script.js` (Step 7 of the migration plan).
@@ -11,15 +11,18 @@
  * IMPORTANT — validation is NOT applied here. Callers should invoke
  * `validateMainLoan` (see ./validation.js) before using `monthlyPayment`
  * on values that came from user input. The function is also useful for
- * hypothetical / test values (e.g. 0% interest) that the UI currently
- * rejects — decision item F1 in BASELINE_CASES.md.
+ * hypothetical / test values (e.g. 0% interest) that were previously
+ * rejected by the UI. Decision F1 (approved) now treats 0% as a valid
+ * zero-interest rate; this module's pure computation therefore accepts
+ * any `annualRatePercent >= 0` (it is the validator's job to reject
+ * negative / blank / non-numeric entries).
  */
 
 /**
  * Standard fixed-rate P&I: `monthlyPI = P * i * (1+i)^n / ((1+i)^n - 1)`.
  *
  * @param {number} principal  Loan principal (0 → returns 0).
- * @param {number} annualRatePercent  Annual rate, e.g. 6.5 for 6.5%.
+ * @param {number} annualRatePercent  Annual rate, e.g. 6.5 for 6.5%. 0 → principal/termMonths.
  * @param {number} termMonths  Number of monthly payments, e.g. 360.
  * @returns {number} P&I amount (no rounding).
  */
@@ -49,6 +52,7 @@ export function monthlyPayment(principal, annualRatePercent, termMonths) {
  *   monthlyPI: number,
  *   monthlyTax: number,
  *   monthlyInsurance: number,
+ *   monthlyHoa: number,
  *   monthlyFees: number,   // tax + insurance + hoa (the "Taxes & Fees" card)
  *   totalMonthly: number,  // PITI
  *   totalInterest: number, // PI * months - principal (no clamp; can be 0 when i=0)
@@ -89,6 +93,7 @@ export function calculateMortgage({
     monthlyPI,
     monthlyTax,
     monthlyInsurance,
+    monthlyHoa: monthlyHoaN,
     monthlyFees,
     totalMonthly,
     totalInterest,

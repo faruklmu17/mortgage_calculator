@@ -1,3 +1,25 @@
+// Step 7: wire the vanilla UI to the extracted pure calculation modules.
+// These modules are also the source of truth the Vitest suite exercises.
+import {
+  calculateMortgage,
+} from './src/lib/mortgage.js';
+import {
+  simulatePayoff,
+} from './src/lib/amortization.js';
+import {
+  formatCurrency,
+  formatDurationSpan,
+  formatShortDuration,
+} from './src/lib/formatting.js';
+import {
+  parseNumeric,
+  parseInterestRate,
+} from './src/lib/validation.js';
+
+// Kept so the rest of the UI reads unchanged: parseInput is the shared pure
+// parser from ./src/lib.
+const parseInput = parseNumeric;
+
 document.addEventListener('DOMContentLoaded', function () {
   // Elements
   const priceInput = document.getElementById('price');
@@ -60,17 +82,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
   let extraMode = 'monthly'; // 'monthly' or 'one-time'
 
-  function parseInput(val) {
-    return parseFloat(String(val).replace(/,/g, '')) || 0;
-  }
-
-  function formatCurrency(val) {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      maximumFractionDigits: 0
-    }).format(val);
-  }
+  // parseInput and formatCurrency now live in ./src/lib (see imports above).
+  // They are pure helpers used by the extracted calculation modules; this UI
+  // uses the same Intl.NumberFormat('en-US') 0-decimal style.
 
   function showError(message) {
     errorMsg.textContent = message;
@@ -119,12 +133,13 @@ document.addEventListener('DOMContentLoaded', function () {
       downPayment = price * (downPayment / 100);
     }
 
-    const monthlyRate = parseInput(rateInput.value) / 100 / 12;
-    const termMonths = parseInput(termInput.value) * 12;
+    const ratePercent = parseInput(rateInput.value);
+    const termYears = parseInput(termInput.value);
     const annualTax = parseInput(taxInput.value);
     const annualInsurance = parseInput(insuranceInput.value);
     const monthlyHoa = parseInput(hoaInput.value);
 
+    // ── Validation (F1: 0% is valid; negative / blank / non-numeric rejected) ──
     if (price <= 0) {
       paymentDisplay.textContent = "$0";
       showError("Please enter a valid home price.");
@@ -137,34 +152,36 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
-    if (monthlyRate <= 0 || termMonths <= 0) {
+    // F1: 0% is valid; blank/non-numeric/negative/non-finite rejected.
+    // Validate against the raw field text so an empty input is not silently
+    // coerced to `0` and then accepted as a zero-interest loan.
+    const rawRateNumber = parseInterestRate(rateInput.value);
+    if (!(rawRateNumber >= 0) || !(termYears > 0)) {
       paymentDisplay.textContent = "$0";
       showError("Please enter a valid interest rate and term.");
       return;
     }
 
-    const principal = price - downPayment;
+    // ── Delegate math to the extracted pure module ──
+    const result = calculateMortgage({
+      price,
+      downPayment,
+      annualRatePercent: ratePercent,
+      termYears,
+      annualTax,
+      annualInsurance,
+      monthlyHoa,
+    });
 
-    // Mortgage Formula: P [ i(1 + i)^n ] / [ (1 + i)^n – 1]
-    const x = Math.pow(1 + monthlyRate, termMonths);
-    const monthlyPI = (principal * x * monthlyRate) / (x - 1);
+    // Update UI (unchanged DOM writes)
+    paymentDisplay.textContent = formatCurrency(result.totalMonthly);
+    piDisplay.textContent = formatCurrency(result.monthlyPI);
+    totalPrincipalDisplay.textContent = formatCurrency(result.principal);
+    totalInterestDisplay.textContent = formatCurrency(result.totalInterest);
+    totalTaxDisplay.textContent = formatCurrency(result.monthlyFees);
+    totalPaymentDisplay.textContent = formatCurrency(result.totalPayoff);
 
-    const monthlyTax = annualTax / 12;
-    const monthlyInsurance = annualInsurance / 12;
-    const totalMonthly = monthlyPI + monthlyTax + monthlyInsurance + monthlyHoa;
-
-    // Update UI
-    paymentDisplay.textContent = formatCurrency(totalMonthly);
-    piDisplay.textContent = formatCurrency(monthlyPI);
-    totalPrincipalDisplay.textContent = formatCurrency(principal);
-    totalInterestDisplay.textContent = formatCurrency((monthlyPI * termMonths) - principal);
-
-    // NOTE: This is MONTHLY taxes/fees. Rename label in HTML to "Monthly Taxes & Fees"
-    totalTaxDisplay.textContent = formatCurrency(monthlyTax + monthlyInsurance + monthlyHoa);
-
-    totalPaymentDisplay.textContent = formatCurrency(totalMonthly * termMonths);
-
-    updateChart(monthlyPI, monthlyTax, monthlyInsurance, monthlyHoa);
+    updateChart(result.monthlyPI, result.monthlyTax, result.monthlyInsurance, result.monthlyHoa);
   }
 
   function updateChart(pi, tax, ins, hoa) {
@@ -221,27 +238,38 @@ document.addEventListener('DOMContentLoaded', function () {
     const price = parseInput(magicPrice.value);
     const downPayment = parseInput(magicDownPayment.value);
     const currentBalanceInput = parseInput(magicBalance.value);
-    const rate = parseInput(magicRate.value) / 100 / 12;
+    const ratePercent = parseInput(magicRate.value);
     const termYears = parseInput(magicTerm.value);
     const extraPayment = parseInput(extraAmountInput.value);
     const tax = parseInput(magicTax.value) / 12;
     const insurance = parseInput(magicInsurance.value) / 12;
 
     const originalPrincipal = price - downPayment;
-    const termMonths = termYears * 12;
 
     // Start balance defaults to original principal if not provided
     const startingBalance = currentBalanceInput > 0 ? currentBalanceInput : originalPrincipal;
 
-    if (price <= 0 || (currentBalanceInput <= 0 && downPayment >= price) || rate <= 0 || termYears <= 0) {
+    // ── Validation (F1: 0% is valid; negative / blank / non-numeric rejected) ──
+    const rawRateNumber = parseInterestRate(magicRate.value);
+    if (
+      price <= 0 ||
+      (currentBalanceInput <= 0 && downPayment >= price) ||
+      !(rawRateNumber >= 0) ||
+      !(termYears > 0)
+    ) {
       magicErrorMsg.textContent = "Please enter valid mortgage details.";
       magicErrorMsg.style.display = 'block';
       return;
     }
 
-    // Standard Monthly PI (calculated from ORIGINAL principal)
-    const x = Math.pow(1 + rate, termMonths);
-    const calculatedPI = (originalPrincipal * x * rate) / (x - 1);
+    // Standard Monthly PI (calculated from ORIGINAL principal) via the pure module.
+    const calculatedPI =
+      calculateMortgage({
+        price,
+        downPayment,
+        annualRatePercent: ratePercent,
+        termYears,
+      }).monthlyPI;
 
     // Use manually entered PI if present and we're not auto-updating from core fields
     let standardMonthlyPI = parseInput(magicMonthlyPI.value);
@@ -253,68 +281,39 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }
 
-    // First, simulate standard payoff starting from startingBalance to get baseline interest
-    let baselineInterest = 0;
-    let baselineMonths = 0;
-    let tempBalance = startingBalance;
-    while (tempBalance > 0.01 && baselineMonths < 600) {
-      baselineMonths++;
-      const interestForMonth = tempBalance * rate;
-      baselineInterest += interestForMonth;
-      let principalRepayment = standardMonthlyPI - interestForMonth;
-      if (tempBalance <= principalRepayment) {
-        tempBalance = 0;
-      } else {
-        tempBalance -= principalRepayment;
-      }
-    }
+    // ── Baseline (no extra) and accelerated (extra) simulations via the pure module ──
+    const baseline = simulatePayoff({
+      startingBalance,
+      contractualMonthlyPI: standardMonthlyPI,
+      annualRatePercent: ratePercent,
+      monthlyExtra: 0,
+      oneTimeExtra: 0,
+    });
 
-    // Simulation with EXTRA payment
-    let balance = startingBalance;
-    let newTotalInterest = 0;
-    let monthsToPayoff = 0;
+    const accelerated = simulatePayoff({
+      startingBalance,
+      contractualMonthlyPI: standardMonthlyPI,
+      annualRatePercent: ratePercent,
+      monthlyExtra: extraMode === 'monthly' ? extraPayment : 0,
+      oneTimeExtra: extraMode === 'one-time' ? extraPayment : 0,
+    });
 
-    // One-time payment flag
-    let oneTimeApplied = false;
-
-    while (balance > 0.01 && monthsToPayoff < 600) { // Safety cap 50 years
-      monthsToPayoff++;
-      const interestForMonth = balance * rate;
-      newTotalInterest += interestForMonth;
-
-      let principalRepayment = standardMonthlyPI - interestForMonth;
-
-      // Apply extra payment
-      if (extraMode === 'monthly') {
-        principalRepayment += extraPayment;
-      } else if (extraMode === 'one-time' && !oneTimeApplied) {
-        principalRepayment += extraPayment;
-        oneTimeApplied = true;
-      }
-
-      if (balance <= principalRepayment) {
-        balance = 0;
-      } else {
-        balance -= principalRepayment;
-      }
-    }
+    const baselineInterest = baseline.totalInterest;
+    const baselineMonths = baseline.months;
+    const newTotalInterest = accelerated.totalInterest;
+    const monthsToPayoff = accelerated.months;
 
     const interestSaved = baselineInterest - newTotalInterest;
     const monthsSaved = baselineMonths - monthsToPayoff;
-    const yearsSaved = Math.floor(monthsSaved / 12);
-    const remainingMonthsSaved = monthsSaved % 12;
 
     // Update UI
     interestSavedDisplay.textContent = formatCurrency(Math.max(0, interestSaved));
 
-    let timeSavedText = "";
-    if (yearsSaved > 0) timeSavedText += `${yearsSaved} year${yearsSaved > 1 ? 's' : ''}`;
-    if (remainingMonthsSaved > 0) timeSavedText += (timeSavedText ? " and " : "") + `${remainingMonthsSaved} month${remainingMonthsSaved > 1 ? 's' : ''}`;
-    if (monthsSaved <= 0) timeSavedText = "0 months";
-    timeSavedDisplay.textContent = timeSavedText;
+    // Duration wording now comes from the shared pure formatter (identical output).
+    timeSavedDisplay.textContent = formatDurationSpan(monthsSaved);
 
-    standardRemainingDisplay.textContent = `${Math.floor(baselineMonths / 12)}y ${baselineMonths % 12}m`;
-    newPayoffTimeDisplay.textContent = `${Math.floor(monthsToPayoff / 12)}y ${monthsToPayoff % 12}m`;
+    standardRemainingDisplay.textContent = formatShortDuration(baselineMonths);
+    newPayoffTimeDisplay.textContent = formatShortDuration(monthsToPayoff);
     originalInterestDisplay.textContent = formatCurrency(baselineInterest);
     newTotalInterestDisplay.textContent = formatCurrency(newTotalInterest);
     newTotalMonthlyDisplay.textContent = formatCurrency(standardMonthlyPI + tax + insurance);
