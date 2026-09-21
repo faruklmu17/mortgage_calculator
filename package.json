@@ -23,6 +23,8 @@
   "homepage": "https://github.com/faruklmu17/mortgage_calculator#readme",
   "devDependencies": {
     "@playwright/test": "^1.63.0",
-    "http-server": "^14.1.1"
+    "@types/node": "^22.20.3",
+    "http-server": "^14.1.1",
+    "typescript": "^7.0.2"
   }
 }
