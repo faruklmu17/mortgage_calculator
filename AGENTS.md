@@ -41,3 +41,4 @@ preserving existing behavior and appearance.
 - Report actual command results.
 - Separate automated checks from manual checks.
 - Update MIGRATION_STATUS.md after each step.
+
