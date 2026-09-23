@@ -7,7 +7,7 @@ preserving existing behavior and appearance.
 
 ## Scope
 
-- Work on the react-migration branch.
+- Work on the watson branch.
 - Complete only the requested migration step.
 - Keep calculations entirely client-side.
 - Reuse the existing CSS.
