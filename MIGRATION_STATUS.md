@@ -176,7 +176,57 @@ The audit is complete, saved to `MIGRATION_AUDIT.md`, and verified against the a
 
 ---
 
-# Overall Migration Status (end of step 8 session)
+# Step 9 Detail
+
+## Step 9: Main calculator interactive parity — ✅ COMPLETE
+
+**Scope honored:** The main "Calculator" tab was refactored to keep the Step 8 behavior **and** satisfy AGENTS.md "use React state for input values, store submitted inputs separately from draft inputs, derive calculated results from submitted inputs, and do not store redundant calculated values in state." `src/lib` pure modules, `style.css`, `App.jsx`, `index.html`, `privacy.html`, `ExtraPaymentCalculator.jsx`, `main.jsx`, and `navBridge.js` were **not** modified. No backend, no routing, no TypeScript, no styling framework. No push, merge, or deploy. The original `script.js` is retained (for Step 14 side-by-side parity); it was not touched.
+
+### Files modified (this step)
+
+| File | Change |
+|------|--------|
+| `src/components/PaymentCalculator.jsx` | Replaced the "store `result` object in `useState`" pattern with a **submitted-snapshot + derive-on-render** pattern. State is now just two values: `downPaymentMode` (which `$`/`%` toggle is highlighted) and `submitted` (a snapshot of the raw field strings + the unit mode in effect, or `null` before the first calculation). The displayed result (all six formatted values, the raw P&I / tax / insurance / HOA breakdown for the donut, and the validation error message) is recomputed on every render by the pure `deriveResult(submitted)` helper — no formatted or derived value is stored in state. `commitCalculation` is the sole writer of `submitted`, and it fires only on the two user actions the original re-ran the calculation from (Calculate-button click, `$`/`%` toggle click). The donut-chart `useEffect` now keys on `submitted` (a stable identity that only changes on an actual recalculation) instead of the per-render-derived `result` object, so unrelated re-renders (typing, tab switch) no longer trigger a Chart.js destroy/recreate. The previous `setErrorMsg` / `setResult` / `handleCalculate(overrides)` plumbing is gone. DOM structure, CSS classes, aria attributes, result-card markup, `onBlur` formatters, and the `$`↔`%` conversion math are unchanged from Step 8. |
+
+### Verification
+
+| Check | Method | Result |
+|-------|--------|--------|
+| Unit suite still green after the refactor | `npm test` | **PASS** — 2 files, **68/68** (`mortgage.test.js` 46, `amortization.test.js` 22) |
+| Production build | `npm run build` | **PASS** — 23 modules; `dist/index.html` 18.96 kB, `dist/assets/index-*.js` 243.37 kB, `dist/assets/index-*.css` 10.00 kB; `✓ built in 82 ms`; no warnings/errors |
+| No duplicate HTML IDs in the built page | `grep -oE 'id="[^"]+"' dist/index.html \| sort \| uniq -c` | **PASS** — single occurrence for every ID (`tips`, `navExtra`, `navCalc`, `guide`, `getStartedBtn`, `extra-magic-guide`, `calculator-root`) |
+| `script.js` is not loaded by the built page | `grep -nEo '<script[^>]*>' dist/index.html` | **PASS** — only the two JSON-LD blocks, the Chart.js CDN script, and the React bundle `<script type="module" src="/assets/index-*.js">`; the two textual `script.js` occurrences are inside the HTML comment `/* … script.js is kept in the repo … */`, not a real `<script>` tag |
+| React boundary markers present in the bundle | `grep -c` over `dist/assets/index-*.js` | **PASS** — `calculator-root`, `Calculate My Payment`, `paymentChart`, `Mortgage`, `downPayment` all present (function names `commitCalculation` / `deriveResult` correctly absent, since Vite minifies them) |
+| Static SEO/guide sections preserved | `grep -c` for `id="guide"`, `id="extra-magic-guide"`, JSON-LD, `schema.org` | **PASS** — 6 matches total across the built HTML |
+| **Step 9 required reference value** — $400,000 price / $80,000 down / 6.5% / 30y (= $320,000 principal, 360 months) → P&I | `node --input-type=module` importing `src/lib/mortgage.js` directly, cross-checked against an independent `P·i·(1+i)^n / ((1+i)^n − 1)` reimplementation | **PASS** — both produce **2022.6176751774892**; module also returns `principal: 320000`, `termMonths-equivalent: 360`; `Number.isFinite` holds on every output |
+| Derived path (`deriveResult`) returns the same reference value | Node harness replicating `deriveResult` byte-for-byte, fed `mode:'dollar'` + the seven raw string fields | **PASS** — raw `pi === 2022.6176751774892`; `principal '$320,000'`, `paymentAmount '$2,581'`, `totalInterest '$408,142'`; no `NaN` / `Infinity` anywhere in the result; `errorMsg === ''` |
+| Approved 0% supported at the derived layer | `deriveResult` with `rate:'0'`, `term:'30'` | **PASS** — accepted (no error); P&I renders as **$889** (= $320,000 / 360 via `formatCurrency`); blank `rate` correctly **rejected** ("Please enter a valid interest rate and term.") so an empty rate field is not silently accepted as a zero-interest loan |
+| Validation order + exact messages preserved at the derived layer | `deriveResult` against: blank price; `downPayment >= price`; blank rate; `-1` rate; `abc` rate | **PASS** — price gate fires first ("Please enter a valid home price."), down≥price fires second ("Down payment must be less than the home price."), the three rate cases all return "Please enter a valid interest rate and term." — byte-identical to `script.js#calculate` |
+| Percent-mode derived path | `deriveResult` with `mode:'percent'`, `price:'400,000'`, `downPayment:'20'` | **PASS** — `pi === 2022.6176751774892` (identical to the dollar-mode reference); `downPayment:'110'` returns the down≥price error; blank price still returns the price error first |
+| First render (no calculation yet) | `deriveResult(null)` | **PASS** — returns `BLANK_RESULT` (`hasCalc:false`, `paymentAmount:'$0'`, `errorMsg:''`), so the chart effect no-ops / clears the canvas and the result cards show the all-$0 sentinel |
+| Chart cleanup on mount / unmount / re-draw | Read `PaymentCalculator.jsx` `useEffect([submitted])` | **PASS** — `chartRef.current.destroy()` runs both before each draw and inside the effect's returned cleanup (fires on unmount and on every subsequent re-draw); idempotent under StrictMode |
+| No stored derived result / no stored formatted string in state | `grep -c 'setResult\|setErrorMsg\|handleCalculate\|INITIAL_RESULT'` | **PASS** — all **0** occurrences; only `useState` calls are `downPaymentMode` and `submitted`; `result` is a per-render `const` derived from `submitted` |
+
+### Manual browser check (not yet performed — this agent has no browser access)
+
+- [ ] Calculator tab: enter $400,000 / $80,000 / 6.5 / 30 / 5,500 / 1,200 / 0 → click **Calculate My Payment** → result card shows **$2,581** PITI, **$2,023** P&I, **$320,000** principal, **$408,142** total interest, **$558** taxes & fees, **$929,142** total payoff, and the donut renders the four-way split. (Matches A1 in `BASELINE_CASES.md`; the math is already pinned by the automated checks above, so a human only needs to confirm display/visual parity.)
+- [ ] Toggle `$` ↔ `%` at the same values: field rewrites (`$80,000` → `20.0`) and the result is unchanged (`$2,023` P&I, `$320,000` principal).
+- [ ] Blank the home-price field and click Calculate → "Please enter a valid home price." shows; result card still reads all-$0.
+- [ ] Set down payment ≥ price and click Calculate → "Down payment must be less than the home price." shows.
+- [ ] Clear or non-numeric the interest-rate field and click Calculate → "Please enter a valid interest rate and term." shows.
+- [ ] Enter `0` in the interest-rate field and click Calculate → a valid zero-interest calculation is returned (not an error).
+- [ ] Switch to **Extra Payment Magic** and back → the main tab's inputs and last result are both preserved (state was not reset by the tab switch).
+
+### Deviations from the original (carried over from Step 8, re-confirmed)
+
+1. `magicMonthlyPI` auto-fill focus guard (Step 8 note #1) — **unchanged this step**, still lives in `ExtraPaymentCalculator.jsx`.
+2. Duplicate `id="magicTerm"` in the original (Step 8 note #2) — **unchanged this step**, still split into `magicTermText` / `magicTermSelect` in the magic tab; the main calculator is unaffected (single `<select id="term">`).
+3. `sessionStorage` demo animations (Step 8 note #3) — **unchanged this step**, still not ported.
+4. Donut still uses the Chart.js CDN global (Step 8 note #4) — **unchanged this step**; the `useEffect` dependency now keys on the (stable-identity) `submitted` snapshot instead of the per-render `result` object, which is a **tightening** (fewer redundant destroy/recreate cycles) with identical visual output.
+
+---
+
+# Overall Migration Status (end of step 9 session)
 
 | Step | Status |
 |------|--------|
@@ -187,7 +237,6 @@ The audit is complete, saved to `MIGRATION_AUDIT.md`, and verified against the a
 | 5 — `AGENTS.md` | ✅ |
 | 6 — Node/Vite setup | ✅ |
 | 7 — Extract & test calculation modules | ✅ |
-| 8 — React-ify the calculator area | ✅ (this session) |
-| 9 — Interactive parity | ⏳ next |
+| 8 — React-ify the calculator area | ✅ |
+| 9 — Interactive parity (main calculator) | ✅ (this session) |
 | 10–16 | ⏳ |
-
