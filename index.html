@@ -45,7 +45,7 @@
         "Real-time monthly payment calculation",
         "PITI breakdown (Principal, Interest, Taxes, Insurance)",
         "Interactive donut chart visualizations",
-        "Privacy-first: No data storage or transmission",
+        "Privacy-first: no financial data is stored or transmitted",
         "Typewriter interactive input guidance"
       ],
       "offers": {
@@ -71,7 +71,7 @@
         "name": "Does this calculator store my financial data?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "No. Mortgage Payoff Lab is a privacy-first application. All calculations are performed locally in your browser, and no data is ever transmitted to a server or stored permanently."
+          "text": "No. Mortgage Payoff Lab is a privacy-first application. The mortgage information you enter and all calculations are processed locally in your browser, and no financial data you enter is transmitted to a server or stored. (The page loads fonts and icons from public CDNs, but those requests do not include your calculator inputs.)"
         }
       }, {
         "@type": "Question",
@@ -88,7 +88,6 @@
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
         media="print" onload="this.media='all'">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
 </head>
 
 <body>
@@ -114,10 +113,9 @@
         </div>
     </header>
 
-    <!-- Step 8: a single React root for both calculator tabs. -->
-    <!-- The legacy script.js (which owns these same DOM nodes) is NO LONGER -->
-    <!-- loaded here; see src/main.jsx. script.js is kept in the repo only -->
-    <!-- for Step 14 parity checks; Step 16 removes it. -->
+    <!-- Step 8: a single React root for both calculator tabs (src/main.jsx). -->
+    <!-- The legacy script.js reference implementation was removed in Step 16 -->
+    <!-- after the Step 14 production parity verification; see MIGRATION_STATUS.md. -->
     <div id="calculator-root"></div>
 
     <!-- Extra Payment Magic SEO & FAQ -->
@@ -236,8 +234,7 @@
                 <p><strong>Compare loan terms:</strong> 15-year vs 30-year mortgages can drastically change total
                     interest paid.</p>
                 <p><strong>Pay extra principal:</strong> Even small extra payments can reduce interest and shorten
-                    payoff time
-                    (coming soon in Mortgage Payoff Lab).</p>
+                    payoff time—see the Extra Payment Magic tab.</p>
             </div>
         </div>
 

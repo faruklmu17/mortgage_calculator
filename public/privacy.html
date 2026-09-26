@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy – Mortgage Payoff Lab</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --secondary: #10b981;
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            --glass: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --input-bg: rgba(255, 255, 255, 0.05);
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            min-height: 100vh;
+        }
+
+        .privacy-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 60px 20px;
+            color: var(--text-main);
+            line-height: 1.6;
+        }
+
+        .privacy-card {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: var(--glass-shadow);
+        }
+
+        h1,
+        h2 {
+            font-family: 'Outfit', sans-serif;
+            color: #fff;
+            margin-bottom: 20px;
+        }
+
+        p {
+            margin-bottom: 15px;
+            color: var(--text-muted);
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            color: var(--primary);
+            text-decoration: none;
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="privacy-container">
+        <a href="index.html" class="back-link">
+            <span aria-hidden="true" style="margin-right: 8px;">&#8592;</span> Back to Calculator
+        </a>
+        <div class="privacy-card">
+            <h1>Privacy Policy</h1>
+            <p>Last updated: September 25, 2026</p>
+
+            <h2>1. Information We Collect</h2>
+            <p>Mortgage Payoff Lab is a client-side application. The mortgage information you enter—home price, down
+                payment, interest rate, term, taxes, insurance, and HOA—and all calculations are processed locally in
+                your browser. We do not store or transmit any of the financial data you enter into the calculator.</p>
+            <p>Like most websites, this site loads fonts and icon graphics from public content delivery networks
+                (CDNs): Google Fonts and cdnjs. Those requests are standard browser requests for public resources and
+                do not include the financial information you enter into the calculator.</p>
+
+            <h2>2. Usage of Data</h2>
+            <p>Since we do not collect your financial data, we do not use, share, or sell it to third parties. Your
+                privacy is maintained inherently by the architecture of this tool.</p>
+
+            <h2>3. External Links</h2>
+            <p>Our website may contain links to other websites. Please be aware that we are not responsible for the
+                content or privacy practices of such other sites.</p>
+
+            <h2>4. Contact Us</h2>
+            <p>If you have any questions about this Privacy Policy, please contact us through the repository's issue
+                tracker.</p>
+        </div>
+    </div>
+
+    <footer style="margin: 60px 0; color: var(--text-muted); font-size: 0.9rem; text-align: center;">
+        <p>&copy; 2025 Mortgage Payoff Lab. All rights reserved.</p>
+    </footer>
+</body>
+
+</html>

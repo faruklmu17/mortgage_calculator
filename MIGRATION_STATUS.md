@@ -101,7 +101,7 @@ The audit is complete, saved to `MIGRATION_AUDIT.md`, and verified against the a
 | File | Change |
 |------|--------|
 | `script.js` | Re-imports from the four new `./src/lib/*.js` modules (`calculateMortgage`, `simulatePayoff`, `formatCurrency` / `formatDurationSpan` / `formatShortDuration`, `parseNumeric` / `parseInterestRate`) and delegates the math. DOM reads, validation order, error messages, `updateChart`, navigation, and the demo path are behaviorally identical (verified by the Step 7 test suite and by Step 8's live dev-server mount) |
-| `package.json` | Added `"test": "vitest run"` and added `vitest ^4.1.11` to `devDependencies` (no `jsdom` needed — the modules are pure and the tests are environment-agnostic, so vitest's default Node environment is sufficient) |
+| `package.json` | Added `"test": "vitest run"` and added `vitest ^4.1.11` to `devDependencies` (no `jsdom` needed — the modules are pure and the tests are environment-agnostic, so vitest's default Node environment is sufficient) |
 | `MIGRATION_STATUS.md` | Step 7 marked COMPLETE (this update) |
 
 > Note: `vite.config.js` was **not** modified in Step 7 — Vitest 4 picks up the existing Vite config by default (no React-plugin / no `environment` setting required for pure-function tests). No `src/test/` directory was created.
@@ -193,92 +193,675 @@ The audit is complete, saved to `MIGRATION_AUDIT.md`, and verified against the a
 | Check | Method | Result |
 |-------|--------|--------|
 | Unit suite still green after the refactor | `npm test` | **PASS** — 2 files, **68/68** (`mortgage.test.js` 46, `amortization.test.js` 22) |
-| Production build | `npm run build` | **PASS** — 23 modules; `dist/index.html` 18.96 kB, `dist/assets/index-*.js` 243.37 kB, `dist/assets/index-*.css` 10.00 kB; no warnings/errors |
-| No duplicate HTML IDs in the built page | `grep -oE 'id="[^"]+"' dist/index.html \| sort \| uniq -c` | **PASS** — single occurrence for every ID |
-| `script.js` is not loaded by the built page | `grep -nEo '<script[^>]*>' dist/index.html` | **PASS** — only JSON-LD, Chart.js CDN, React bundle |
-| Step 9 reference value ($400k/$80k/6.5%/30y → P&I) | `node --input-type=module` + independent formula | **PASS** — both produce **2022.6176751774892** |
-| Derived path returns the same reference value | Node harness replicating `deriveResult` | **PASS** — raw `pi === 2022.6176751774892`; no NaN/Infinity |
-| 0% accepted; blank rate rejected | `deriveResult` with `rate:'0'` / `rate:''` | **PASS** |
-| Validation order + exact messages | `deriveResult` against 5 failure cases | **PASS** — byte-identical to `script.js#calculate` |
-| Percent-mode derived path | `deriveResult` with `mode:'percent'` | **PASS** — identical P&I to dollar-mode |
-| First render (no calculation yet) | `deriveResult(null)` | **PASS** — `BLANK_RESULT`; chart effect no-ops |
-| Chart cleanup (mount/unmount/re-draw) | Read `PaymentCalculator.jsx` `useEffect([submitted])` | **PASS** — `destroy()` before draw and on unmount |
-| No stored derived result in state | `grep -c 'setResult\|setErrorMsg\|handleCalculate\|INITIAL_RESULT'` | **PASS** — 0 occurrences |
+| Production build | `npm run build` | **PASS** — 23 modules; `dist/index.html` 18.96 kB, `dist/assets/index-*.js` 243.37 kB, `dist/assets/index-*.css` 10.00 kB; `✓ built in 82 ms`; no warnings/errors |
+| No duplicate HTML IDs in the built page | `grep -oE 'id="[^"]+"' dist/index.html \| sort \| uniq -c` | **PASS** — single occurrence for every ID (`tips`, `navExtra`, `navCalc`, `guide`, `getStartedBtn`, `extra-magic-guide`, `calculator-root`) |
+| `script.js` is not loaded by the built page | `grep -nEo '<script[^>]*>' dist/index.html` | **PASS** — only the two JSON-LD blocks, the Chart.js CDN script, and the React bundle `<script type="module" src="/assets/index-*.js">`; the two textual `script.js` occurrences are inside the HTML comment `/* … script.js is kept in the repo … */`, not a real `<script>` tag |
+| React boundary markers present in the bundle | `grep -c` over `dist/assets/index-*.js` | **PASS** — `calculator-root`, `Calculate My Payment`, `paymentChart`, `Mortgage`, `downPayment` all present (function names `commitCalculation` / `deriveResult` correctly absent, since Vite minifies them) |
+| Static SEO/guide sections preserved | `grep -c` for `id="guide"`, `id="extra-magic-guide"`, JSON-LD, `schema.org` | **PASS** — 6 matches total across the built HTML |
+| **Step 9 required reference value** — $400,000 price / $80,000 down / 6.5% / 30y (= $320,000 principal, 360 months) → P&I | `node --input-type=module` importing `src/lib/mortgage.js` directly, cross-checked against an independent `P·i·(1+i)^n / ((1+i)^n − 1)` reimplementation | **PASS** — both produce **2022.6176751774892**; module also returns `principal: 320000`, `termMonths-equivalent: 360`; `Number.isFinite` holds on every output |
+| Derived path (`deriveResult`) returns the same reference value | Node harness replicating `deriveResult` byte-for-byte, fed `mode:'dollar'` + the seven raw string fields | **PASS** — raw `pi === 2022.6176751774892`; `principal '$320,000'`, `paymentAmount '$2,581'`, `totalInterest '$408,142'`; no `NaN` / `Infinity` anywhere in the result; `errorMsg === ''` |
+| Approved 0% supported at the derived layer | `deriveResult` with `rate:'0'`, `term:'30'` | **PASS** — accepted (no error); P&I renders as **$889** (= $320,000 / 360 via `formatCurrency`); blank `rate` correctly **rejected** ("Please enter a valid interest rate and term.") so an empty rate field is not silently accepted as a zero-interest loan |
+| Validation order + exact messages preserved at the derived layer | `deriveResult` against: blank price; `downPayment >= price`; blank rate; `-1` rate; `abc` rate | **PASS** — price gate fires first ("Please enter a valid home price."), down≥price fires second ("Down payment must be less than the home price."), the three rate cases all return "Please enter a valid interest rate and term." — byte-identical to `script.js#calculate` |
+| Percent-mode derived path | `deriveResult` with `mode:'percent'`, `price:'400,000'`, `downPayment:'20'` | **PASS** — `pi === 2022.6176751774892` (identical to the dollar-mode reference); `downPayment:'110'` returns the down≥price error; blank price still returns the price error first |
+| First render (no calculation yet) | `deriveResult(null)` | **PASS** — returns `BLANK_RESULT` (`hasCalc:false`, `paymentAmount:'$0'`, `errorMsg:''`), so the chart effect no-ops / clears the canvas and the result cards show the all-$0 sentinel |
+| Chart cleanup on mount / unmount / re-draw | Read `PaymentCalculator.jsx` `useEffect([submitted])` | **PASS** — `chartRef.current.destroy()` runs both before each draw and inside the effect's returned cleanup (fires on unmount and on every subsequent re-draw); idempotent under StrictMode |
+| No stored derived result / no stored formatted string in state | `grep -c 'setResult\|setErrorMsg\|handleCalculate\|INITIAL_RESULT'` | **PASS** — all **0** occurrences; only `useState` calls are `downPaymentMode` and `submitted`; `result` is a per-render `const` derived from `submitted` |
 
 ### Manual browser check (not yet performed — this agent has no browser access)
 
-- [ ] Calculator tab: enter $400,000 / $80,000 / 6.5 / 30 / 5,500 / 1,200 / 0 → click **Calculate My Payment** → result card shows **$2,581** PITI, **$2,023** P&I, **$320,000** principal, **$408,142** total interest.
-- [ ] Toggle `$` ↔ `%` at the same values → field rewrites and result unchanged.
-- [ ] Blank the home-price field and click Calculate → error message; all-$0 cards.
-- [ ] Down payment ≥ price → error.
-- [ ] Blank / non-numeric rate → error; `0` → valid zero-interest result.
-- [ ] Switch to **Extra Payment Magic** and back → both tabs' last results preserved.
+- [ ] Calculator tab: enter $400,000 / $80,000 / 6.5 / 30 / 5,500 / 1,200 / 0 → click **Calculate My Payment** → result card shows **$2,581** PITI, **$2,023** P&I, **$320,000** principal, **$408,142** total interest, **$558** taxes & fees, **$929,142** total payoff, and the donut renders the four-way split. (Matches A1 in `BASELINE_CASES.md`; the math is already pinned by the automated checks above, so a human only needs to confirm display/visual parity.)
+- [ ] Toggle `$` ↔ `%` at the same values: field rewrites (`$80,000` → `20.0`) and the result is unchanged (`$2,023` P&I, `$320,000` principal).
+- [ ] Blank the home-price field and click Calculate → "Please enter a valid home price." shows; result card still reads all-$0.
+- [ ] Set down payment ≥ price and click Calculate → "Down payment must be less than the home price." shows.
+- [ ] Clear or non-numeric the interest-rate field and click Calculate → "Please enter a valid interest rate and term." shows.
+- [ ] Enter `0` in the interest-rate field and click Calculate → a valid zero-interest calculation is returned (not an error).
+- [ ] Switch to **Extra Payment Magic** and back → the main tab's inputs and last result are both preserved (state was not reset by the tab switch).
 
 ### Deviations from the original (carried over from Step 8, re-confirmed)
 
-1. `magicMonthlyPI` auto-fill focus guard — **restored in Step 10** (see below).
-2. Duplicate `id="magicTerm"` — **fixed in Step 10** (see below).
-3. `sessionStorage` demo animations — unchanged, still not ported (Step 12).
-4. Donut still uses the Chart.js CDN global — unchanged (Step 11).
+1. `magicMonthlyPI` auto-fill focus guard (Step 8 note #1) — **unchanged this step**, still lives in `ExtraPaymentCalculator.jsx`.
+2. Duplicate `id="magicTerm"` in the original (Step 8 note #2) — **unchanged this step**, still split into `magicTermText` / `magicTermSelect` in the magic tab; the main calculator is unaffected (single `<select id="term">`).
+3. `sessionStorage` demo animations (Step 8 note #3) — **unchanged this step**, still not ported.
+4. Donut still uses the Chart.js CDN global (Step 8 note #4) — **unchanged this step**; the `useEffect` dependency now keys on the (stable-identity) `submitted` snapshot instead of the per-render `result` object, which is a **tightening** (fewer redundant destroy/recreate cycles) with identical visual output.
 
 ---
 
 # Step 10 Detail
 
-## Step 10: Convert the Extra Payment Magic tab — ✅ COMPLETE
+## Step 10: Extra Payment Magic parity — ✅ COMPLETE (browser checks PENDING)
 
-**Scope honored:** The Extra Payment Magic tab was converted to the same **submitted-snapshot + derive-on-render** pattern established in Step 9. A new pure `src/lib/extraMagic.js` module encapsulates the full validation → contractual P&I → baseline + accelerated `simulatePayoff` → format pipeline that `script.js#calculateMagic` previously ran inline. `ExtraPaymentCalculator.jsx` now derives its entire display from a single `submitted` snapshot via `deriveExtraPaymentResult` — no formatted or derived value is stored in state. Other source files (`src/lib/mortgage.js`, `src/lib/amortization.js`, `src/lib/validation.js`, `src/lib/formatting.js`, `style.css`, `App.jsx`, `index.html`, `privacy.html`, `PaymentCalculator.jsx`, `main.jsx`, `navBridge.js`) were **not** modified. No push, merge, or deploy. The original `script.js` is retained for Step 14.
+**Scope honored:** The Extra Payment Magic tab was parity-hardened against the original `script.js#calculateMagic` using the tested `src/lib` modules. Built on the Step 8 component (markup, CSS classes, and aria attributes unchanged) without a rewrite of working parts. `src/lib/mortgage.js`, `amortization.js`, `validation.js`, `formatting.js`, `PaymentCalculator.jsx`, `index.html`, `style.css`, `privacy.html`, and the original `script.js` were **not** modified. No backend, no routing, no TypeScript, no styling framework. No push, merge, or deploy. Chart integration is untouched (Step 11).
 
 ### Files created (this step)
 
 | File | Purpose |
 |------|---------|
-| `src/lib/extraMagic.js` | Pure derivation of the full Extra Payment Magic display. Exports `EXTMAGIC_BLANK` (frozen blank sentinel) and `deriveExtraPaymentResult(fields, mode, isPIOverride)`. Handles: validation gates, contractual P&I from the **original** loan (never the current balance), `isPIOverride` manual-P&I override, baseline + accelerated `simulatePayoff`, non-amortizing / 600-month-limit detection (F7), PITI display (tax + insurance outside the sim), and the full savings message / color / HTML triple |
-| `src/lib/extraMagic.test.js` | 24 Vitest tests: B7 (no extra), B4 ($200/mo), B5 ($10k one-time), B6 (balance $200k), zero-interest, manual P&I override, validation failures, non-amortizing, limit-reached, oversized lump sum, negative extra, all-fields-blank |
+| `src/lib/extraPayment.js` | Pure, UI-free Extra Payment Magic derivation. Exports: `CORE_MAGIC_KEYS` (the original `calculateMagic(false)` listener set), `BLANK_MAGIC_RESULT` (sentinel matching the original static initial markup byte-for-byte), `applyPIAutoFill(inputs, {force, isFocused})` (the original `magicMonthlyPI` write-back as a pure function, focus guard included), and `deriveExtraPaymentResult(inputs, mode, piIsManual)` (the full displayed result: validation → contractual P&I from the ORIGINAL loan → baseline/accelerated `comparePayoffs` → all display strings + `limitWarning`) |
+| `src/lib/extraPayment.test.js` | 69 Vitest tests pinning the derivation to the baseline cases (B4/B5/B6/B7 with identical inputs), the Step 10 requirements (contractual P&I not recomputed from current balance; tax/insurance outside the simulation; 0% interest; oversized extras; small final payments; F7 non-payoff warnings; F4 term parity; F2 negative-extra non-crash; no NaN/Infinity anywhere), and the P&I auto-fill semantics |
 
 ### Files modified (this step)
 
 | File | Change |
 |------|--------|
-| `src/components/ExtraPaymentCalculator.jsx` | Replaced stored `result` / `magicErrorMsg` state with **submitted-snapshot + derive-on-render**. State: `magicInputs` (draft strings), `extraMode`, `submitted` (snapshot + `__isPIOverride` + `__modeAtCommit`). Display derived per-render by `deriveExtraPaymentResult`. Three writers of `submitted`: `updateMagicInput`, `handleCalculate`, `selectExtraMode`. `piAutoFill` written back via `useEffect` with the original's focus guard. `seedNonce` sync unchanged. DOM/CSS/aria unchanged from Step 8 |
-| `MIGRATION_STATUS.md` | Step 10 marked COMPLETE (this update) |
+| `src/components/ExtraPaymentCalculator.jsx` | Result is no longer stored in state: `deriveExtraPaymentResult(magicInputs, extraMode, piIsManual)` is recomputed on every render (Step 9 pattern; AGENTS.md "Do not store redundant calculated values in state"). New `piIsManual` flag state (event history — whether the P&I field holds a user-entered value) preserves the original `isPIOverride` semantics, including the subtlety that the simulation uses the **unrounded** calculated P&I whenever the original fill branch ran, even though the field displays the rounded value. Handlers: `handleMagicInput` (live recalc on every input, `force` = core field), `handleCalculate` / `selectExtraMode` (force, as the original `calculateMagic()` default), `handleMagicBlur` (the original's seven blur formatters — **restored, they were missing in Step 8**), tab-sync effect with the one-time latch removed. The term `<select>` is now uncontrolled (`defaultValue="30"`) dead UI, exactly as in the original. A new amber `role="status"` warning div (reusing `.error-msg` layout) renders `limitWarning`. DOM structure otherwise unchanged |
+| `src/App.jsx` | `handleSwitchTab` bumps `seedNonce` on **every** "Extra Payment Magic" nav click — including a re-click while already on that tab — matching the original `navExtra` handler, which re-ran the sync check on every click. One-line move + comment |
 
-### Verification
+### Parity restorations (Step 8 deviations re-checked against the original source)
+
+The Step 8 "Deviations" list and the F-decisions in `BASELINE_CASES.md` §F were re-verified against the pre-migration `script.js` / `index.html` (git `02af58e`). Per the Step 10 instruction, an earlier status note was **not** treated as approval of a behavior change:
+
+1. **Term select fallback (F4 / Step 8 note #2) — reverted to original.** Step 8 read `parseNumeric(magicTermText) || parseNumeric(magicTermSelect)`, gave the select a recalc listener, and had the tab sync write it. The original `getElementById('magicTerm')` returned the **first** element in document order — the text input — so the select was dead UI (no listeners, never read, never written). Restored: term comes from the text input only; the select is uncontrolled dead UI. **F4 remains an open decision** (remove the dead select, or make it drive the term) — no behavior change was made beyond restoring parity.
+2. **`magicMonthlyPI` focus guard (Step 8 note #1) — restored.** Step 8 claimed a focus guard "is not meaningful" for controlled inputs; it is: when the user focuses the P&I field and clears it, the original left the field empty (simulation uses the calculated P&I), while Step 8's code refilled it with the rounded value, forcing the user to delete digits before typing a manual payment. Restored via the retained `magicMonthlyPIRef` (passed as `isFocused` into the pure `applyPIAutoFill`).
+3. **Tab-sync one-time latch — removed.** Step 8's `didSync` useRef latched on the first seed event **even when the sync did nothing** (main price empty at that moment), so a later main→magic switch never synced. The original had no latch — it re-checked on every switch while the magic price was empty (and re-syncs if the user manually cleared the magic price). The "only once" effect came solely from the empty-price gate. The `App.jsx` seed-bump move (above) completes the parity.
+4. **Sync balance guard — removed.** Step 8 wrote `principal > 0 ? principal.toLocaleString('en-US') : ''`; the original wrote `principal.toLocaleString('en-US')` **unconditionally** (non-positive when down ≥ price; the validation gate then rejects the form). Restored.
+5. **Sync no longer touches the select** (Step 8 set `magicTermSelect: String(mainInputs.term || '30')`; the original never did).
+6. **Blur formatters restored** (baseline E8): the original attached thousands-separator `blur` formatters to `magicPrice`, `magicDownPayment`, `magicBalance`, `magicTax`, `magicInsurance`, `extraAmount`, `magicMonthlyPI` (reformat only, no recalc). Step 8's component had none. All seven restored.
+7. **Step 8 note #3 was factually wrong and is corrected here:** `runMagicDemo()` **is** called in the original — by the `navExtra` click handler whenever the magic price is empty (gated by `sessionStorage` `mpl_magic_demo_v4`, so once per session). "Switching to Magic with an empty price runs a typewriter demo" is real original behavior. It is **not ported in Step 10** — demo/animation work is explicitly Step 12's scope ("Reintroduce animations and the demo"), and Step 10's instruction did not include it. (The note's claim about `runDemoOnce()` being commented out in the main tab is correct; the main-tab typewriter placeholder is also Step 12.)
+
+### F7 implemented (approved in the Step 10 request, requirement 7)
+
+The original silently ran a non-amortizing or too-slow loan to the 600-month cap and displayed "50y 0m" as if it were a completed payoff. Now `deriveExtraPaymentResult` surfaces four warning tiers (amber warning div, `role="status"`), and truncated durations get a trailing `+` so "50y 0m+" cannot be read as a payoff date:
+
+1. Accelerated payment below the first month's interest (balance grows): "Your payment does not cover the first month's interest, so the balance would grow instead of shrinking. Increase your payment or extra payment."
+2. Baseline payment below first-month interest, extra keeps it amortizing: "Your current payment alone does not cover the first month's interest at this rate. The extra payment is what keeps the balance from growing."
+3. Accelerated amortizing but beyond 600 months: "Even with this extra payment, the loan is not fully paid off within the 50-year (600-month) simulation limit. Results are shown truncated at 600 months."
+4. Baseline beyond 600 months, accelerated pays off: "Your current payment does not fully pay off the loan within the 50-year (600-month) simulation limit, so the baseline figures are truncated at 600 months."
+
+In all four cases the green "you'll save … in total interest!" success message (which claims a completed payoff) is suppressed in favor of "Resolve the warning above to see your total interest savings." This is an **approved deviation** from the original (baseline F7).
+
+### Other documented deviations / preserved quirks
+
+- **Validation-error display:** on a validation error the result cards now reset to the all-sentinel values (`$0` / "30 Years" / "Enter your details to see the magic happen!"), consistent with the Step 9 main-calculator behavior. The original kept the previously displayed (stale) values on error. Deliberate cross-tab consistency choice; flagged in the manual checks below.
+- **Down ≥ price with a positive balance (original quirk, preserved):** the contractual P&I is derived from `price − downPayment`, so with down ≥ price it is `$0` (`monthlyPayment` returns 0 for non-positive principal). The original then simulated with a $0 P&I and silently showed "50y 0m". The React version runs the identical simulation and surfaces it via F7 warning tier 1; a user-entered manual P&I is honored as in the original (tested: `100,000` balance + manual `1,000` P&I → "12y 1m").
+- **% mode sync quirk (preserved):** the tab sync copies the raw down-payment string, so in `$/%` mode the percentage number (e.g. "20") lands in the magic tab's dollar-only down field, and `magicBalance = price − 20` — exactly as the original did.
+- **F2 (negative extra, unresolved — preserved, no behavior change):** the extra field is not validated; a negative extra flows into the simulation (tested: no crash, no NaN/Infinity, payoff never shorter than the no-extra baseline, interest-saved display clamped at $0).
+- **F5 (core-field edit overwrites manual P&I, unresolved — preserved):** both force paths (core edit, button, mode toggle) re-derive and rewrite the P&I field, as in the original.
+- **F4 (unresolved — parity restored, decision still needed):** see #1 above.
+- **F7 (resolved):** implemented as above.
+
+### Verification (actual commands and results)
 
 | Check | Method | Result |
 |-------|--------|--------|
-| All tests pass (incl. new extraMagic suite) | `npm test` | **PASS** — 3 files, **92/92** (mortgage 46, amortization 22, extraMagic 24) |
-| Production build | `npm run build` | **PASS** — 24 modules; `dist/index.html` 18.96 kB, JS 245.08 kB, CSS 10.00 kB; no warnings |
-| No duplicate HTML IDs | `grep -oE 'id="[^"]+"' dist/index.html \| sort \| uniq -c` | **PASS** — 7 unique IDs |
-| `script.js` not loaded | `grep -nEo '<script[^>]*>' dist/index.html` | **PASS** |
-| B7 (no extra): baseline = accelerated, $0 saved | independent Node sim + tests | **PASS** — $408,142 both sides; PITI $2,581 |
-| B4 ($200/mo): 23y 5m, saves $105,429 | independent Node sim + tests | **PASS** — 281 months; both match |
-| B5 ($10k one-time): 27y 5m, saves $53,943 | independent Node sim + tests | **PASS** — 329 months; both match |
-| B6 (bal $200k): 11y 10m / 10y 4m, saves $12,228 | independent Node sim + tests | **PASS** — 142/124 months; both match |
-| Zero-interest: $0 interest, P&I $889 | `extraMagic.test.js` | **PASS** |
-| Non-amortizing (12%/$500 PI): non-success warning | `extraMagic.test.js` | **PASS** — correct `nonSuccessReason` |
-| Limit-reached (PI=$10): non-success warning | `extraMagic.test.js` | **PASS** — correct `nonSuccessReason` |
-| Oversized lump sum: no overpay | `extraMagic.test.js` | **PASS** |
-| `piAutoFill` focus guard preserved | `ExtraPaymentCalculator.jsx` `useEffect` | **PASS** — `activeElement === el` → skip |
-| No stored derived result in state | `grep` of `ExtraPaymentCalculator.jsx` | **PASS** — only `magicInputs`, `extraMode`, `submitted` |
+| Dependencies install reproducibly | `npm ci` (fresh; `node_modules` was absent in this environment) | **PASS** — 0 vulnerabilities |
+| Full unit suite | `npm test` | **PASS** — 3 files, **137/137** (`mortgage.test.js` 46, `amortization.test.js` 22, `extraPayment.test.js` 69) |
+| Baseline B4–B7 identical inputs | Vitest assertions on `deriveExtraPaymentResult` + independent Node cross-check against `BASELINE_CASES.md` | **PASS** — B4: 30y 0m → 23y 5m, $105,429 saved, "6 years and 7 months", $408,142 → $302,714, PITI $2,581; B5: 27y 5m, $53,943, "2 years and 7 months", → $354,199; B6: 11y 10m → 10y 4m, $12,228, $87,189 → $74,960; B7: 30y 0m both, $0, "0 months" — all byte-identical to the baseline references |
+| Contractual P&I not recomputed from current balance | Vitest (B6 keeps $2,581 PITI at a $200k balance; a new-loan recompute would show ~$1,114) | **PASS** |
+| Tax/insurance outside the simulation | Vitest (tax/insurance changes alter only `newTotalMonthly`) | **PASS** |
+| F7 warning tiers (1)–(4) | Vitest (non-amortizing; baseline-grows; both-truncated; baseline-truncated) | **PASS** — correct tier, "50y 0m+" markers, success message suppressed |
+| No NaN/Infinity in any display string | Vitest grid (9 input variants × 2 modes × 2 P&I flags) | **PASS** |
+| Production build | `npm run build` | **PASS** — 24 modules; `dist/index.html` 18.96 kB, `index-*.js` 245.79 kB (gzip 75.02), `index-*.css` 10.00 kB, `preview-*.png` 585.97 kB; no warnings |
+| No duplicate HTML IDs in built page | `grep -oE 'id="[^"]+"' dist/index.html \| sort \| uniq -c` | **PASS** — single occurrence for every ID (`tips`, `navExtra`, `navCalc`, `guide`, `getStartedBtn`, `extra-magic-guide`, `calculator-root`) |
+| `script.js` not loaded | `grep -cE '<script[^>]*src="[^"]*script\.js"' dist/index.html` | **PASS** — 0 |
+| Step 10 markers in bundle | `grep -cF` over `dist/assets/index-*.js` | **PASS** — `magicTermText`, `Calculate Savings`, both F7 warning strings, `Please enter valid mortgage details.`, `Resolve the warning above`, `calculator-root` all present |
+| Static SEO/JSON-LD preserved | `grep -c 'id="guide"\|id="extra-magic-guide"\|id="tips"\|JSON-LD\|schema.org'` + `ld+json` count | **PASS** — 6 matches, 2 JSON-LD blocks (same as Step 9) |
+| Dev-server transform | `npm run dev` (port 5199) + `curl` of `/`, `main.jsx`, `App.jsx`, `ExtraPaymentCalculator.jsx`, `extraPayment.js`, `amortization.js`, `navBridge.js` | **PASS** — all 200, no transform errors in the log |
+| Built output served | `npm run preview` (port 5198) + `curl` of page and bundle | **PASS** — 200/200 |
+| No push/merge/deploy | none issued | **PASS** |
 
-### Manual browser check (not yet performed)
+### Manual browser checks (PENDING — this agent has no browser access)
 
-- [ ] Magic tab: B4 inputs → **$105,429** saved, **23y 5m** new payoff, **$302,714** new interest.
-- [ ] One-time $10,000 → **$53,943** saved, **27y 5m** new payoff.
-- [ ] Balance $200k + $200/mo → **11y 10m** / **10y 4m** / **$12,228** saved.
-- [ ] Blank price → error; very low P&I → 600-month warning in red.
-- [ ] PI auto-fills on core edit; preserved on non-core edit.
-- [ ] Tab switching → both tabs' results preserved.
+Exact inputs and expected results. The math is already pinned by the automated checks; a human only needs to confirm display/interaction parity.
 
-### Deviations from the original (resolved this step)
+1. **B4 (sync + monthly extra):** Main tab: Home Price `400,000`, Down `80,000`, Rate `6.5`, Term `30`, Tax `5,500`, Ins `1,200` → click **Extra Payment Magic**. Expect (C10a sync): magic fields auto-filled — price `400,000`, down `80,000`, balance `320,000`, rate `6.5`, term text `30`, tax `5,500`, ins `1,200`, P&I field auto-filled `2,023`; result shows the extra-0 case (30y 0m / $0). Then type `200` in Extra Payment (Monthly): **Total Interest Saved $105,429 · Time Saved 6 years and 7 months · Normally Remaining 30y 0m · New Payoff Time 23y 5m · Original Interest $408,142 · New Total Interest $302,714 · New Monthly PITI $2,581** · green "By paying $200 extra every month, you'll save $105,429 in total interest!"
+2. **B5 (one-time):** switch toggle to **One-time**, Extra `10,000` → New Payoff Time **27y 5m**, saved **$53,943**, "2 years and 7 months", New Total Interest **$354,199**, message says "extra one-time".
+3. **B6 (lower balance):** Current Balance `200,000`, Extra `200` (Monthly) → **11y 10m → 10y 4m**, saved **$12,228**, "1 year and 6 months", **$87,189 → $74,960**.
+4. **B7 (zero extra):** Extra `0` → **30y 0m on both**, saved **$0**, "0 months", "Increase your extra payment to see how much you can save!"
+5. **C10b (no reverse sync):** after #1–#4, edit a Magic value, switch back to **Calculator** → main-tab values unchanged.
+6. **Re-sync (latch removed):** clear the Magic Home Price field, switch to Main and back → Magic re-syncs from Main (original had no one-time latch).
+7. **P&I focus guard (restored):** focus Monthly P&I, clear it → field stays **empty** (no auto-refill), results still use the calculated P&I; type `2500` → manual P&I used (balance `320,000` → Normally Remaining **18y 3m**).
+8. **F5 (preserved):** with manual P&I `2500`, change the Interest Rate (core field) → P&I field is overwritten with the recalculated rounded value (e.g. `2,023`) and results use the calculated P&I.
+9. **F7 warning tier 1:** Magic: price `500,000`, down `0`, balance `500,000`, rate `24`, term `30`, P&I `5,000`, extra `0` → amber warning "Your payment does not cover the first month's interest…", both durations **50y 0m+**, no green success message.
+10. **F7 warning tier 3:** price `1,000,000`, down `0`, balance `2,000,000`, rate `3`, term `30`, P&I `5,001`, extra `0` → amber "…not fully paid off within the 50-year (600-month) simulation limit…", both **50y 0m+**.
+11. **F7 warning tier 4:** same as #10 but Extra `1,500` (Monthly) → Normally Remaining **50y 0m+**, New Payoff Time **49y 0m**, warning names the truncated baseline.
+12. **Validation:** clear the Magic Home Price → "Please enter valid mortgage details." + result cards reset to the sentinel values ($0 / 30 Years / "Enter your details to see the magic happen!"). (Note: the original kept stale values here — confirm this reset is acceptable; see "Other documented deviations".)
+13. **Blur formatting (restored):** type `400000` in Magic Home Price, click away → field rewrites to `400,000` (same for balance, down, tax, insurance, extra, P&I).
+14. **Dead select (F4 parity):** change the second "Loan Term (Years)" dropdown → no effect on any result; the "Original Loan Term (Years)" text field drives the calculation (blank text term → validation error even though the select says 30).
+15. **Tab-switch state preservation:** fill Magic, switch to Calculator and back → Magic inputs and last result intact.
 
-1. `magicMonthlyPI` auto-fill focus guard — **restored**: `useEffect` checks `document.activeElement === el` before writing.
-2. Duplicate `id="magicTerm"` — **fixed**: split into `magicTermText` / `magicTermSelect`; `parseNumeric(magicTermText) || parseNumeric(magicTermSelect)`.
+### Blockers
+
+**None.** Step 11 (chart) is independent of this step.
+
+### Next task
+
+Step 11 — Integrate the chart (replace the Chart.js CDN donut on the main tab with `chart.js` + `react-chartjs-2` in `PaymentChart`; the Magic tab has no chart).
 
 ---
 
-# Overall Migration Status (end of step 10 session)
+# Step 11 Detail
+
+## Step 11: Integrate the chart — ✅ COMPLETE (browser check PENDING)
+
+**Scope honored:** The main-tab donut moved from the Chart.js CDN global into a dedicated `PaymentChart.jsx` component backed by the **bundled** `chart.js` 4.5.1 + `react-chartjs-2` 5.3.1 packages. Categories, colors, legend, tooltip, and responsiveness are carried over from `script.js#updateChart`; required Chart.js components are explicitly registered; the numeric breakdown is passed through props; an all-zero breakdown renders nothing; the old CDN script and the legacy chart-instance code were removed **after** the React chart was in place and verified. The payment amounts remain readable text in the result cards (the canvas only visualizes). The Magic tab has no chart (unchanged). No backend, no routing, no TypeScript, no styling framework. No push, merge, or deploy. `src/lib/*`, `style.css`, `privacy.html`, `ExtraPaymentCalculator.jsx`, `App.jsx`, `main.jsx`, `navBridge.js`, and the original `script.js` were **not** modified.
+
+### Files created (this step)
+
+| File | Purpose |
+|------|---------|
+| `src/components/PaymentChart.jsx` | The payment donut. `memo`-wrapped function component: renders `null` before the first calculation or on an all-zero breakdown (no degenerate empty ring — `.chart-container`'s `min-height: 250px` preserves the layout, as the original blank canvas did); otherwise renders a `react-chartjs-2` `<Doughnut id="paymentChart">` with the four segment colors, the original legend/tooltip options, `cutout: '70%'`, `borderWidth: 0`, `hoverOffset: 4`, `responsive: true`, `maintainAspectRatio: false`. Registers `ArcElement`, `Tooltip`, `Legend` (the `DoughnutController` is registered by `react-chartjs-2`'s typed `<Doughnut>`). |
+| `src/components/PaymentChart.test.jsx` | 8 jsdom component tests (real `PaymentChart` + real `react-chartjs-2`, mocked `Chart` class) pinning the Step 11 checkpoint: one instance per canvas on `#paymentChart`, the exact original config, in-place `update()` on breakdown change (never a second instance), `memo()` no-op on unchanged re-render, no canvas/instance pre-calculation or on all-zero input, `destroy()` on unmount, hasCalc toggle destroys-before-recreates, and StrictMode leaves exactly **one live** instance. |
+
+### Files modified (this step)
+
+| File | Change |
+|------|--------|
+| `src/components/PaymentCalculator.jsx` | Removed the legacy CDN-chart code: `canvasRef`/`chartRef` refs, the `useEffect` that constructed `new window.Chart(...)` (and its destroy-before-redraw + unmount cleanup), and the destructured chart-key values. The `<canvas ref={canvasRef} id="paymentChart">` is replaced by `<PaymentChart hasCalc pi tax insurance hoa/>` inside the same `.chart-container` div, fed the raw (unformatted) breakdown from the derived `result`. Header comment updated. Nothing else in the component changed (Step 9 derived-on-render pattern intact). |
+| `index.html` | **Removed** the `<script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>` tag (only after the React chart was in place and its config verified against the original — see below). Font Awesome CDN, JSON-LD, `<head>` metadata, and everything else untouched. |
+| `package.json` / `package-lock.json` | Added `chart.js ^4.5.1` + `react-chartjs-2 ^5.3.1` (dependencies) and `jsdom ^30.1.1` (devDependency — component tests only, not bundled). |
+| `vite.config.js` | Vitest-only `test.server.deps.inline: ['chart.js', 'react-chartjs-2']` so `vi.mock('chart.js')` can intercept them (node_modules are externalized by default; real Chart.js cannot create a chart on jsdom's 2D-less canvas). Vite ignores the `test` key — dev/build output is unaffected (verified: identical `dist/index.html` structure, no config leakage). |
+| `MIGRATION_STATUS.md` | Step 11 marked COMPLETE (this update). |
+
+### Color parity — verified from source, not assumed
+
+The original `script.js#updateChart` dataset specified **no colors**; the CDN build's auto-registered `colors` plugin painted the arcs. Verified two facts empirically:
+
+1. **Same version on both sides.** `https://cdn.jsdelivr.net/npm/chart.js` (the exact URL `index.html` used) currently serves **chart.js 4.5.1** — confirmed live via the jsDelivr API (`tags.latest`) and the served file's banner — identical to the now-installed `chart.js@4.5.1`.
+2. **Per-arc palette.** Read the installed (identical) build's `colors` plugin source: `colorizeDoughnutDataset` sets `backgroundColor = data.map((_, k) => BORDER_COLORS[k % 7])` for a doughnut with no color definition, where `BORDER_COLORS` starts `rgb(54, 162, 235)`, `rgb(255, 99, 132)`, `rgb(255, 159, 64)`, `rgb(255, 205, 86)`. `PaymentChart.jsx` hardcodes exactly those four on the four-arc dataset, so the rendered arcs, legend point-style colors, and hover are pixel-identical to the CDN version.
+
+### Lifecycle — verified from the installed react-chartjs-2 5.3.1 source
+
+Read `node_modules/react-chartjs-2/dist/index.js`: `id`/`aria-label` reach the `<canvas>` via `...canvasProps`; the default `width={300} height={150}` HTML attributes equal the original bare `<canvas>` defaults; one `new Chart(canvas, config)` on mount; breakdown/option changes apply **in place** (`setDatasets`/`setOptions` on `chart.config` + `chart.update()`, dataset matched in place by `Object.assign`); `chart.destroy()` on unmount. `memo()` on `PaymentChart` means the wrapper only re-renders when the four breakdown numbers or `hasCalc` actually change — the original `updateChart()` cadence (redraw on real recalculation only; never on draft typing or tab switches).
+
+### Other documented behavior (deviations carried from Steps 9/10)
+
+- **Chart clears on validation error** (as the result cards already did since Step 9): a failed recalculation sets `hasCalc` false, so the donut unmounts and the (empty) `.chart-container` keeps its 250 px min-height. The original kept the stale chart on error. Deliberate cross-component consistency with the Step 9/10 error-reset deviation — flagged in the manual check below.
+- The canvas gains `role="img"` (added by react-chartjs-2) + our `aria-label` — an a11y improvement over the original bare canvas; no visual change.
+- The donut now ships in the JS bundle (`dist/assets/index-*.js` grows 245.79 kB → 403.97 kB, gzip 75.02 → 129.58 kB — the cost of dropping the separate CDN request, which is also one fewer third-party network request the privacy page can claim).
+
+### Verification (actual commands and results)
+
+| Check | Method | Result |
+|-------|--------|--------|
+| Full unit suite incl. new chart tests | `npm test` | **PASS** — 4 files, **145/145** (mortgage 46, amortization 22, extraPayment 69, PaymentChart 8) |
+| Step 11 checkpoint — no duplicate instances | `PaymentChart.test.jsx`: prop change → same instance, `update()` ×1, instance count stays 1; hasCalc toggle → old destroyed before new created; unmount → destroyed; StrictMode → exactly one **live** instance | **PASS** |
+| Step 11 checkpoint — clean data contract | `PaymentChart.test.jsx`: labels/order, raw numeric data, the four CDN-parity colors, `cutout '70%'`, legend (`bottom`, `#94a3b8`, point-style, padding 20, font 12), tooltip callback (`'P&I: $2,023'`, `'Taxes: $458'` via `formatCurrency`), `responsive`/`maintainAspectRatio: false`, `borderWidth 0`, `hoverOffset 4` | **PASS** |
+| All-zero / pre-calc breakdown | `PaymentChart.test.jsx`: no canvas, no instance, no error | **PASS** |
+| Color parity vs CDN | jsDelivr API (`tags.latest = 4.5.1`) + served-file banner vs installed `chart.js@4.5.1`; `colors` plugin source read (`colorizeDoughnutDataset` + `BORDER_COLORS`) | **PASS** — identical version, first-four palette entries match `SEGMENT_COLORS` exactly |
+| No legacy chart code left in `src/` | `grep -rn "window.Chart\|myDonutChart" src/` | **PASS** — 0 matches |
+| Production build | `npm run build` | **PASS** — 29 modules; `dist/index.html` 18.89 kB, `index-*.js` 403.97 kB (gzip 129.58), `index-*.css` 10.00 kB, `preview-*.png` 585.97 kB; no warnings |
+| CDN chart.js gone from built HTML | `grep -c "cdn.jsdelivr.net/npm/chart.js" dist/index.html` | **PASS** — 0 (only the Font Awesome CDN remains — Step 13 scope) |
+| No duplicate HTML IDs in built page | `grep -oE 'id="[^"]+"' dist/index.html \| sort \| uniq -c` | **PASS** — single occurrence per ID |
+| `script.js` not loaded | `grep -oE '<script[^>]*>' dist/index.html` | **PASS** — only the two JSON-LD blocks + the module bundle |
+| Chart markers in bundle | `grep -cF` over `dist/assets/index-*.js` | **PASS** — `paymentChart`, all four `rgb(...)` segment colors, `doughnut`, `94a3b8`, `maintainAspectRatio`, `P&I`/`Taxes`/`Insurance`/`HOA` all present |
+| Payment amounts remain readable text | Read `PaymentCalculator.jsx` result cards (unchanged from Step 9): six formatted values render as DOM text outside the chart | **PASS** |
+| Built output served | `npm run preview -- --port 5197` + `curl` | **PASS** — page / bundle / css all **200** (server stopped after the check) |
+| No push/merge/deploy | none issued | **PASS** |
+
+### Manual browser check (PENDING — this agent has no browser access)
+
+1. Main tab: $400,000 / $80,000 / 6.5 / 30 / 5,500 / 1,200 / 0 → Calculate → donut renders with the **same four arc colors as before the migration** (blue P&I, red Taxes, orange Insurance, yellow HOA), bottom legend, and hover tooltip reading e.g. "P&I: $2,023". No console errors; exactly one canvas in `.chart-container`.
+2. Change a field and Calculate again (e.g. rate 7.0) → the donut **updates in place** (same canvas element, no flash of a second chart), arc sizes change, colors/legend identical.
+3. Clear the home-price field and Calculate → donut disappears, result cards reset to $0 sentinels, "Please enter a valid home price." shows; `.chart-container` keeps its height (confirm the empty-on-error state is acceptable — see deviation above).
+4. Switch to Extra Payment Magic and back → donut intact (state preserved; canvas not recreated).
+5. DevTools → Network: **no request to cdn.jsdelivr.net for chart.js** on the built page; the donut still renders from the bundle.
+
+### Blockers
+
+**None.** Step 12 (animations/demo) is independent of this step.
+
+### Next task
+
+Step 12 — Reintroduce animations and the demo (typewriter intro on the main tab, magic-tab demo on empty switch, `sessionStorage` keys, `prefers-reduced-motion`, StrictMode-safe timers).
+
+---
+
+# Step 12 Detail
+
+## Step 12: Reintroduce animations and the demo — ✅ COMPLETE (browser checks PENDING)
+
+**Scope honored:** The two animations that were **live in the original** are ported to React:
+
+1. **Main-tab placeholder typewriter** (`script.js#initTypewriter` — ran unconditionally on load): types "Enter your home price here..." into the price input's *placeholder* (never its value), holds, deletes, loops.
+2. **Magic-tab typing demo** (`script.js#runMagicDemo` — driven by the navExtra handler whenever the magic price was empty, gated by `sessionStorage` `mpl_magic_demo_v4`).
+
+The original's **dead** main-tab value demo (`runDemo` / `runDemoOnce`, gated by `mpl_demo_seen`) was **not** ported: its call site is commented out in the original, so the deployed site never ran it — porting it would add behavior the original never had (documented deviation).
+
+All Step 12 requirements were layered on:
+
+- **Every timer cleaned up on unmount** — each animation is a single `setTimeout` chain tracked in one ref; the cleanup cancels it on unmount and on every effect re-run (StrictMode's double-invoked mount cancels the first chain).
+- **Demo stops when the user begins interacting** — typing in any magic field, clicking Calculate Savings, or toggling Monthly/One-time cancels the pending chain (the demo's own state writes bypass the user handlers, so they can never trip the stop).
+- **User-entered values are never overwritten** — a demo field the user already filled is *skipped* (the original cleared all six and retyped them).
+- **`prefers-reduced-motion` respected** — typewriter: static full text, no timers; demo: all values appear at once, no glow, session key set immediately. The typewriter also follows the setting flipping at runtime (matchMedia `change` listener).
+- **Placeholders separate from actual values** — the typewriter only ever writes the `placeholder` attribute (via state); it never touches `value`.
+- **StrictMode-safe by construction** (StrictMode remains enabled in `main.jsx`; nothing was disabled to hide duplicate-effect bugs).
+
+### Files created (this step)
+
+| File | Purpose |
+|------|---------|
+| `src/components/PaymentCalculator.test.jsx` | 7 jsdom + fake-timer tests pinning the typewriter: the exact original timing table (100 ms/char typing with `\|` cursor, 3000 ms hold, 50 ms/char deletion — including the original's two-tick full-text deletion quirk — 500 ms pause, repeat), stop-on-value/focus with the **1 s re-check** and **resume-from-where-it-left-off** semantics, reduced-motion static text + runtime setting change, unmount timer cleanup (`getTimerCount() === 0`), StrictMode single chain. |
+| `src/components/ExtraPaymentCalculator.test.jsx` | 10 jsdom + fake-timer tests pinning the demo: the exact 2600 ms timeline (price `'600'` at t=120, completion at t=2600), P&I left empty until rate + term are both typed (the original validated before touching the P&I field), final values + P&I auto-filled from the ORIGINAL loan (computed from `src/lib/mortgage.js` in the test), session key set at completion, glow `scale(1.02)` → `scale(1)` at +500 ms, no same-session re-run, sync precedence over the demo, stop-on-typing, stop-on-Calculate-click, skip-user-filled-field (timeline +200 ms beat), reduced-motion instant fill with no glow, unmount mid-demo (no key, no timers), StrictMode single chain; plus an App-level test: demo keeps running while the user is on the Calculator tab, and re-entering Magic starts **no second demo**. |
+
+### Files modified (this step)
+
+| File | Change |
+|------|--------|
+| `src/components/PaymentCalculator.jsx` | Typewriter: `pricePlaceholder` state (initial `''` — the original static placeholder was empty; the animation is the sole placeholder source), `priceFocused` state via `onFocus`/`onBlur` on the price input, a stop-condition **ref read at each tick** (so value/focus changes never restart the chain — the original's chain kept running and resumed mid-word), a matchMedia listener effect for the reduced-motion setting, and the faithful timing-table effect with cleanup. The price input now uses `placeholder={pricePlaceholder}`. Header comment updated (including the `runDemo`/`mpl_demo_seen` non-port decision). Nothing else in the component changed. |
+| `src/components/ExtraPaymentCalculator.jsx` | Demo: `MAGIC_DEMO_KEY` (`mpl_magic_demo_v4` — the "v4" rename preserved verbatim) + `MAGIC_DEMO_FIELDS` (original values and order; `magicTerm` → `magicTermText` per F4); `demoActiveRef` / `demoTimerRef` / `demoGlow` state (0/1/2); `stopDemo()`; `startDemo(baseline)` — original cadence ((len+1) × 40 ms per field + 200 ms pause) and the original `calculateMagic()` P&I auto-fill on the same ticks (`applyPIAutoFill` no-ops while the form is invalid, exactly like the original's validation early-return); the `seedNonce` effect restructured to the original navExtra order (sync check **first**, then the demo check against the **post-sync** state); user handlers (`handleMagicInput` / `handleCalculate` / `selectExtraMode`) call `stopDemo()` first; unmount cleanup effect; the results-card glow as a state-driven inline `transition`/`transform` (same properties the original set inline — `style.css` untouched, per AGENTS.md "reuse the existing CSS"). Header comment updated. |
+| `MIGRATION_STATUS.md` | Step 12 marked COMPLETE (this update). |
+
+### Parity notes and decisions
+
+- **Session key timing preserved:** set when typing **finishes**, not at start — a reload mid-demo re-runs the demo on the next switch, exactly as in the original.
+- **P&I auto-fill during the demo** happens only once the form is valid (rate + term typed) — the original `calculateMagic()` early-returned on validation failure and left the P&I field untouched; `applyPIAutoFill` reproduces that gate (test-pinned).
+- **F6 resolved (stale results after the demo):** the original cleared the six fields ~2 s after the demo but never recalculated, leaving stale results. Stale results are impossible under the Step 10 derived-on-render pattern (AGENTS.md: "Do not store redundant calculated values in state"), so the demo values **remain in the fields** — the result the user saw stays visible and consistent with the fields. The 2000 ms field-clear timer was therefore not ported.
+- **No competing second demo:** a second nav click while a demo is running cannot start another chain (the original *would* have started a second, competing `runMagicDemo` — latent bug, deliberately not reproduced).
+- **Tab switch mid-demo:** both tabs stay mounted (`App.jsx` toggles `display`), so the demo keeps running in the background — the same as the original's page-level timer chain, which was not tied to tab visibility.
+- **Typewriter stop/resume:** while the price field holds a value or has focus, the placeholder holds the full text and the chain re-checks every 1 s; it resumes from the interrupted character (original behavior, test-pinned).
+- The original's `console.log("Starting Extra Payment Magic Demo...")` was not ported (debug noise, not user-visible behavior).
+- Under reduced motion the typewriter shows the static full text — the same text the stopped state shows (the original had no such mode; this is the Step 12 requirement).
+
+### Verification (actual commands and results)
+
+| Check | Method | Result |
+|-------|--------|--------|
+| Full unit suite incl. new animation tests | `npm test` | **PASS** — 6 files, **162/162** (mortgage 46, amortization 22, extraPayment 69, PaymentChart 8, PaymentCalculator/typewriter 7, ExtraPaymentCalculator/demo 10) |
+| Typewriter timing table | `PaymentCalculator.test.jsx` (fake timers): `\|` → `E\|` → … → full+`\|` at 2900 ms; hold to 5900 ms; deletion incl. the original's 2-tick full-text quirk; `''` at 7400 ms; restart `\|` at 7900 ms | **PASS** |
+| Stop/resume semantics | value present → full text held with 1 s re-checks; cleared → resumes mid-word (`Ente\|` after `Ent\|` was the interrupted state); same for focus/blur | **PASS** |
+| Reduced motion (typewriter) | static full text, `getTimerCount() === 0`; setting flipped at runtime → static ↔ animated both ways | **PASS** |
+| Unmount cleanup (both animations) | `getTimerCount() === 0` after unmount; advancing 60 s fires nothing | **PASS** |
+| Demo timeline | `'600'` at t=120; P&I still empty at t=840 (form invalid); all six final values + P&I from the original 480,000 loan + key `'1'` + glow `scale(1.02)` at t=2600; `scale(1)` and 0 timers at t=3100; result card text matches `deriveExtraPaymentResult` of the demo's final inputs | **PASS** |
+| Session behavior | key set → cleared form + fresh nav click → no re-run, 0 timers | **PASS** |
+| Sync precedence | main price 400,000 → fields synced (balance `320,000`, P&I `2,023`), no demo, key never set | **PASS** |
+| Stop on user interaction | typing a rate mid-demo and clicking Calculate Savings each cancel the chain; user value kept; no key | **PASS** |
+| User values never overwritten | pre-filled balance `250,000` survives the demo (skipped field, +200 ms beat); same under reduced motion | **PASS** |
+| Reduced motion (demo) | all values + P&I synchronously, key set, no glow, 0 timers | **PASS** |
+| StrictMode | one live typewriter chain and one live demo chain per trigger | **PASS** |
+| Tab switch mid-demo (through `CalculatorApp`) | demo keeps typing while on the Calculator tab (`12` in the down field at t=1120); re-entry starts no second demo; single completion, key set once | **PASS** |
+| Production build | `npm run build` | **PASS** — 29 modules; `dist/index.html` 18.89 kB, `index-*.js` 406.24 kB (gzip 130.41), `index-*.css` 10.00 kB; no warnings |
+| No duplicate HTML IDs in built page | `grep -oE 'id="[^"]+"' dist/index.html \| sort \| uniq -c` | **PASS** — single occurrence per ID |
+| No Chart.js CDN in built HTML (Step 11 regression guard) | `grep -c "cdn.jsdelivr.net/npm/chart.js" dist/index.html` | **PASS** — 0 |
+| Step 12 markers in bundle | `grep -cF` over `dist/assets/index-*.js` | **PASS** — `mpl_magic_demo_v4`, `Enter your home price here...`, `scale(1.02)`, `prefers-reduced-motion`, `all 0.5s ease`, demo value `600,000`, `mpl:switch-tab` all present |
+| Built output served | `npm run preview -- --port 5196` + `curl` | **PASS** — page / bundle **200** (server stopped after the check) |
+| No push/merge/deploy | none issued | **PASS** |
+
+### Manual browser checks (PENDING — this agent has no browser access)
+
+1. Fresh session (no `sessionStorage`): on load, the Home Price placeholder types "Enter your home price here..." with the cursor, holds ~3 s, deletes, and loops.
+2. Click into the price field (or type a value) → animation stops at the full text; clear the field and click away → it resumes mid-word, not from the start.
+3. Switch to Extra Payment Magic with the main tab empty → the demo types 600,000 / 450,000 / 120,000 / 6.5 / 30 / 500 over ~2.6 s, P&I auto-fills, the results card gently scales up 1.02× and back; the green savings message appears.
+4. Type into any Magic field mid-demo (or click **Calculate Savings**, or toggle Monthly/One-time) → the demo stops immediately and the user's value is kept.
+5. Reload in the same session and switch to Magic again → the demo does **not** re-run (`mpl_magic_demo_v4` = 1).
+6. Enter a main-tab price first, then switch to Magic → the values sync from the main tab; no demo.
+7. With the OS/DevTools reduced-motion emulation on: placeholder is static text; the Magic demo fills all values at once with no glow.
+8. Switch to Calculator mid-demo → the demo finishes in the background; returning to Magic shows the completed state (no second demo, no double-typed fields).
+9. No console errors in any of the above; the price input's *value* is never touched by the placeholder animation.
+
+### Blockers
+
+**None.** Step 13 (static files, privacy, SEO) is independent of this step.
+
+### Next task
+
+Step 13 — Preserve static files, privacy, and SEO (audit production output, keep all existing public URLs, review privacy wording against actual network behavior — note the Chart.js CDN request that Step 11 removed changes that review).
+
+---
+
+# Step 13 Detail
+
+## Step 13: Preserve static files, privacy, and SEO — ✅ COMPLETE (deploy + share-card checks PENDING)
+
+**Scope honored:** Every existing public URL is preserved — the app at `/`, `/privacy.html` (self-contained styles, no new dependency on `style.css`), `/robots.txt`, `/sitemap.xml`, `/CNAME`, `/preview.png`, and the Google verification file — all now land in `dist/` via a new `public/` directory. The root `index.html` remains the Vite entry point; there is **no** `index.html` in `public/` and **no** router was introduced. Deployment domain unchanged: `CNAME` content, canonical URL, `og:url`/`twitter:url`, and both sitemap URLs are byte-identical to the pre-migration values. `src/lib/*` and every component are untouched — mortgage calculation behavior is unchanged (162/162 tests). **No push, merge, or deploy from this agent.**
+
+### Problems found in the pre-step production output (all fixed)
+
+1. **Deploy workflow had no build step** and uploaded the **entire repo root** (`path: '.'`). Pre-migration that was correct (the site *was* the repo root); post-migration it would serve the raw `index.html` with its `/src/main.jsx` reference — a broken site. Fixed: `setup-node` (Node 22, npm cache) → `npm ci` → `npm run build` → upload `path: 'dist'`. Trigger, permissions, concurrency, and environment unchanged.
+2. **No `public/` directory existed**, so the production build was missing *every* static URL (CNAME, robots.txt, sitemap.xml, verification file, preview.png, privacy.html). Fixed by `git mv` of the six files into `public/` (byte-identical moves — verified by md5, and the md5s again identical after Vite copies them into `dist/`).
+3. **`og:image`/`twitter:image` inconsistency in the old build:** with `preview.png` at the repo root, Vite rewrote `og:image` to a hashed `/assets/preview-*.png` but left `twitter:image` as `preview.png` — on a deployed site `/preview.png` would have 404'd. With the image now in `public/`, Vite rewrites **neither** tag: both keep the original relative `preview.png`, which resolves to `/preview.png` — the single stable public URL the original site had (verified: 200, 585,977 bytes).
+4. **`privacy.html` said "Mortgage Pro"** (the app is Mortgage Payoff Lab) in its title, §1, and footer — fixed.
+5. **Overclaimed privacy wording** in two places, inaccurate while the Font Awesome (cdnjs) and Google Fonts requests are still live: the JSON-LD FAQ answer ("no data is ever transmitted to a server or stored permanently") and `featureList` ("No data storage or transmission"). Both rewritten to scope the claim to **financial data / calculator inputs** and to note the CDN font/icon requests. `privacy.html` §1 rewritten the same way (inputs listed, "processed locally in your browser") plus a new paragraph naming the two CDNs; "Last updated" moved to September 25, 2026. No "no data leaves the browser" claim remains anywhere.
+6. **Stale copy** in `#tips`: "(coming soon in Mortgage Payoff Lab)" — the Extra Payment Magic tab is shipped (Step 10). Now reads "…shorten payoff time—see the Extra Payment Magic tab."
+7. **`privacy.html` back-link icon** used `<i class="fas fa-arrow-left">` without loading Font Awesome (the icon never rendered, pre-existing). Replaced with a Unicode `←` span so it renders without adding a CDN dependency to the page.
+
+### Files modified (this step)
+
+| File | Change |
+|------|--------|
+| `public/CNAME`, `public/robots.txt`, `public/sitemap.xml`, `public/googleb4f539193a03794c.html`, `public/preview.png` | `git mv` from repo root — contents unchanged (md5-verified in `dist/`). |
+| `public/privacy.html` | Brand "Mortgage Pro" → "Mortgage Payoff Lab" (title, §1, footer); §1 rewritten: inputs enumerated, "processed locally in your browser", "do not store or transmit any of the financial data you enter"; new CDN paragraph (Google Fonts + cdnjs, standard public-resource requests, never calculator inputs); §2 scoped to "financial data"; back-link icon → Unicode arrow; "Last updated: September 25, 2026". Still self-contained (inline `<style>` + its own Google Fonts `@import`; no `style.css` reference; back link `href="index.html"`). |
+| `index.html` | JSON-LD `featureList`: "Privacy-first: no financial data is stored or transmitted"; FAQ Q2 answer: inputs + calculations "processed locally in your browser", no financial data transmitted/stored, CDN parenthetical. `#tips` stale "coming soon" → Extra Payment Magic tab reference. **All other `<head>` metadata untouched** (title, description, canonical, OG, Twitter, both JSON-LD `@type`s, Font Awesome CDN) — head is byte-identical to the pre-migration original except the two wording fixes. |
+| `.github/workflows/deploy.yml` | Added `actions/setup-node@v4` (Node 22, `cache: npm`), `npm ci`, `npm run build`; upload artifact `path: '.'` → `path: 'dist'`. |
+| `README.md` | Project-structure tree now reflects the React layout (`src/`, `public/`, `vite.config.js`, `script.js` as legacy reference); deployment section: build + `dist/` upload instead of "uploads the entire repo"; `CNAME` and Privacy-Policy links repointed to `public/`. |
+| `MIGRATION_STATUS.md` | Step 13 marked COMPLETE (this update). |
+
+### What was verified against the pre-migration original (before changing anything)
+
+- `git show 02af58e:index.html` head compared to the current `index.html`: title, meta description, author, canonical, all OG and Twitter tags, and both JSON-LD blocks were already **identical** (Step 8 carried them over) — Step 13 therefore only fixed the wording overclaims and the stale tip, preserving every other tag.
+- Pre-migration original also contained the "coming soon" copy (line 529) — the copy fix is a correction of stale content, not a redesign.
+- PITI / HOA terminology checked across `index.html` (meta, JSON-LD, guides, FAQ, Trust & Transparency), `privacy.html`, and `src/`: PITI = Principal, Interest, Taxes, Insurance and HOA = monthly association fees, consistent everywhere.
+
+### Verification (actual commands and results)
+
+| Check | Method | Result |
+|-------|--------|--------|
+| Full unit suite | `npm test` | **PASS** — 6 files, **162/162** (no `src/` change this step; confirms no regression) |
+| Production build | `npm run build` | **PASS** — 29 modules; `dist/index.html` 19.01 kB (gzip 5.12), `index-*.js` 406.24 kB (gzip 130.41), `index-*.css` 10.00 kB (gzip 2.69); no warnings |
+| All static files in `dist/` | `find dist -type f` | **PASS** — exactly: `index.html`, `assets/index-*.js`, `assets/index-*.css`, `CNAME`, `robots.txt`, `sitemap.xml`, `googleb4f539193a03794c.html`, `preview.png`, `privacy.html` (9 files) |
+| Static files byte-identical to source | md5 of `public/*` vs `dist/*` | **PASS** — all six identical |
+| No second `index.html` | `find dist -name index.html` | **PASS** — only `dist/index.html` |
+| All public URLs serve | `npm run preview -- --port 4173` + `curl` | **PASS** — 200 on `/`, `/privacy.html`, `/robots.txt`, `/sitemap.xml`, `/CNAME`, `/preview.png`, `/googleb4f539193a03794c.html`, `/assets/index-*.js`, `/assets/index-*.css` (server stopped after) |
+| `preview.png` intact | `curl` + `stat -c%s` | **PASS** — 585,977 bytes end-to-end |
+| `CNAME` content | `cat dist/CNAME` | **PASS** — `mortgagepayofflab.com` |
+| `robots.txt` / sitemap URLs | `cat` | **PASS** — `Sitemap: https://mortgagepayofflab.com/sitemap.xml`; sitemap lists `/` and `/privacy.html` (unchanged) |
+| `/privacy.html` styled | jsdom render of `dist/privacy.html` + computed styles | **PASS** — h1 in `Outfit`, card `border-radius: 24px` + shadow, body gradient, back-link `#4f46e5`-var, `href="index.html"`; inline `<style>` present, no external stylesheet |
+| Privacy wording | `grep` over `dist/privacy.html` | **PASS** — "Mortgage Payoff Lab" ×3, "Mortgage Pro" ×0, "processed locally in your browser", CDN paragraph present |
+| Metadata preserved in built HTML | `grep` over `dist/index.html` | **PASS** — title, meta description, `canonical https://mortgagepayofflab.com/`, all 5 OG tags, all 5 Twitter tags, `og:image` + `twitter:image` both `preview.png` (resolves to `/preview.png`, 200) |
+| JSON-LD valid | `JSON.parse` of both extracted blocks | **PASS** — 2 blocks: `SoftwareApplication`, `FAQPage` (3 questions) |
+| Educational/SEO content in built HTML | `grep` over `dist/index.html` | **PASS** — `#extra-magic-guide`, `#guide`, `#tips`, FAQ section, Trust & Transparency all present |
+| No duplicate HTML IDs | regex id scan of `dist/index.html` | **PASS** — 7 IDs, no duplicates |
+| No Chart.js CDN (Step 11 regression guard) | `grep -c "cdn.jsdelivr.net/npm/chart.js" dist/index.html` | **PASS** — 0 (only the Font Awesome CDN remains — now disclosed in the privacy wording) |
+| Built HTML references only hashed assets | `grep` over `dist/index.html` | **PASS** — `/assets/index-*.js` + `/assets/index-*.css`; no `/src/main.jsx`, no bare `style.css` reference |
+| Deploy workflow shape | Read `deploy.yml` | **PASS** — trigger `v1` + `workflow_dispatch`, permissions/concurrency/environment unchanged; new steps: setup-node 22 (npm cache), `npm ci`, `npm run build`, upload `dist` |
+| No push/merge/deploy | none issued | **PASS** |
+
+### Manual / CI checks (PENDING — deploy happens on the user's push to `v1`)
+
+1. After the first CI deploy: `https://mortgagepayofflab.com/` serves the built app; `/privacy.html` opens directly with its dark styling and a working back link; `/CNAME` is honored (custom domain unchanged).
+2. Share-card test (e.g. Facebook Sharing Debugger / X Card Validator): the preview image loads from `https://mortgagepayofflab.com/preview.png` for both `og:image` and `twitter:image`.
+3. Google Search Console verification file at `/googleb4f539193a03794c.html` (site ownership re-check if it had lapsed).
+4. `/robots.txt` and `/sitemap.xml` fetch at the domain root.
+
+### Blockers
+
+**None.** The deploy-workflow change only takes effect when the user pushes to `v1` (this agent does not push/merge/deploy per AGENTS.md).
+
+### Next task
+
+Step 14 — Final verification: interactive parity re-check against the original (`script.js` still in the repo as the reference) plus the production-file checklist above.
+
+---
+
+# Step 14 Detail
+
+## Step 14: Verify the production build — ✅ COMPLETE (visual + deploy checks PENDING)
+
+**Scope honored:** verification only — **no application code changed** (no features, no refactors, no regression fixes needed). Verification ran against the **working tree**, which holds the Step 13 changes (note: those Step 13 changes were still **uncommitted** in the working tree at the start of this step — `git status` showed the staged `public/` renames and modified `index.html`/`README.md`/`deploy.yml`/`privacy.html`/`MIGRATION_STATUS.md`; latest commit was "Step 12 is complete now").
+
+### Method (this environment has no usable browser)
+
+`/apps/bin/firefox` (ESR 128) cannot run inside this container (missing X11/NSS/GTK libraries — `ldd` verified), and no other browser is available. Production verification was therefore done at three levels, each running the **actual production bundle**:
+
+1. **`npm run preview` serves `dist/`** — all static URLs checked with `curl` + md5.
+2. **The built bundle executed in jsdom 30** (`JSDOM.fromURL` against the live preview server; jsdom does not execute `<script type="module">`, so the single self-contained classic chunk — verified to contain zero ESM syntax — was evaluated in the window realm, equivalent to the browser executing the module after DOM parse). 92 checks across three sessions: RUN A (full interactive parity), RUN B (fresh-session demo), RUN C (prefers-reduced-motion). jsdom gaps were bridged **in the harness only** (canvas 2D no-op stub, `ResizeObserver` stub, layout sizes, no-op `scrollTo`/`scrollIntoView`) — nothing was added to application code.
+3. **Reference implementation:** the repo's pre-React `script.js` (the deployed original's code, with the approved F1/F4 decisions from Steps 7–10) was executed in Node under a minimal DOM shim that fires its real `calculate()` / `calculateMagic()` / demo / sync code paths, producing the exact display strings the original renders for every case. The React production output was asserted **equal** to those values.
+
+### Verification (actual commands and results)
+
+| Check | Method | Result |
+|-------|--------|--------|
+| Full unit suite | `npm test` | **PASS** — 6 files, **162/162** |
+| Clean production build | `rm -rf dist && npm run build` | **PASS** — 29 modules, no warnings; `dist/index.html` 19.01 kB (gzip 5.12), `assets/index-BrptsVus.js` 406.24 kB (gzip 130.41), `assets/index-W1v8K94i.css` 10.00 kB (gzip 2.69) |
+| `dist/` contents | `find dist -type f` + md5 | **PASS** — exactly 9 files; all six `public/` files byte-identical in `dist/`, and byte-identical to the pre-migration originals at commit `02af58e` (except `privacy.html` — deliberate Step 13 wording/branding fix) |
+| Preview static URLs | `npm run preview -- --port 4173 --strictPort` + `curl` | **PASS** — 200 on `/`, `/privacy.html`, `/robots.txt`, `/sitemap.xml`, `/CNAME`, `/preview.png` (585,977 B), `/googleb4f539193a03794c.html`, `/assets/index-BrptsVus.js`, `/assets/index-W1v8K94i.css` (server stopped after) |
+| `CNAME` | `cat dist/CNAME` | **PASS** — `mortgagepayofflab.com` |
+| Interactive parity | 92-check jsdom run of the production bundle vs the executed `script.js` reference | **PASS — 92/92** (RUN A 58, RUN B 14, RUN C 6, plus network/console audits) |
+
+### Parity results (React production bundle == executed original, exact display strings)
+
+| Case | Displayed values (both implementations) |
+|------|------------------------------------------|
+| A1 standard ($400k / $80k / 6.5% / 30y / tax 5,500 / ins 1,200 / HOA 0) | P&I **$2,023** · Principal **$320,000** · Interest **$408,142** · Taxes&Fees **$558** · PITI **$2,581** · Payoff **$929,142** |
+| A2 zero interest (0%) | P&I **$889** · Interest **$0** · PITI **$1,447** · Payoff **$521,000** (F1-approved: 0% is valid) |
+| A11 zero-interest + $0 down | P&I **$1,111** · Interest **$0** |
+| A3 full down payment | exact error "Down payment must be less than the home price." |
+| A8 blank price | exact error "Please enter a valid home price." |
+| A9a negative rate | exact error "Please enter a valid interest rate and term." |
+| A9c/A9d 110% down → toggle back | error; toggle converts to **440,000**, still error |
+| A9b 90% down | P&I **$253** · Principal **$40,000** · PITI **$811**; %→$ converts to **360,000** (valid) |
+| A10 PITI with HOA 250 | Taxes&Fees **$808** · PITI **$2,831** |
+| A12 rate 7.0 | P&I **$2,129** · PITI **$2,687** (also: results change **only** on button click — typing 7.0 without clicking left the display at $2,581) |
+| Down-payment toggle round-trip | $80,000 → % → **"20.0"** → $ → **"80,000"**, A1 results unchanged each time (toggle re-runs the calculation, as in the original) |
+| B7 extra $0 | 30y 0m / 30y 0m · **$0** saved · **0 months** · interest **$407,857** both (simulations match) |
+| B4 $200/month | **$105,287** saved · 6y 7m · **23y 5m** · **$302,570** |
+| B4b toggle to one-time (same $200) | **$1,191** saved · 0 months · **$408,142** (unrounded P&I re-derived on mode change, as in the original) |
+| B5 one-time $10,000 (natural sequence) | **$53,879** saved · 2y 7m · **27y 5m** · **$353,978** |
+| B6 balance $200,000 + $200/mo | **$12,221** saved · 1y 6m · 11y 10m → **10y 4m** · **$87,162 → $74,940** |
+| B-overpay one-time $10,000 on $1,000 balance | paid off **0y 1m**, interest **$5**, **$0** saved, no success claim — final payment never overpays principal |
+| F7 non-amortizing (PI $1,000 < $1,733 interest) | numbers identical to original (50y 0m, **$3,925,742**) + approved explicit warning + suppressed success message |
+| F7 600-month limit (PI $810 @ 3%) | numbers identical (**$472,107**) + approved "50y 0m**+**" truncation suffix + explicit 600-month warning |
+| C10a tab sync | all 7 fields copied one-way on switch (balance **320,000** = price − down), P&I auto-filled **2,023**, results computed (**$408,142** unrounded, as in the original's `calculateMagic()` on switch) |
+| C10b no reverse sync | editing Magic left Main untouched |
+| Magic validation | empty form → exact "Please enter valid mortgage details." + cards reset to sentinels ("30 Years", "Enter your details to see the magic happen!") |
+| Demo (fresh session) | types 600,000 / 450,000 / 120,000 / 6.5 / 30 / 500 at the original 40 ms/char cadence; P&I auto-filled **3,034**; **$147,945** saved · 7y 1m · 25y 2m → **18y 1m** · **$463,572 → $315,627**; session key `mpl_magic_demo_v4` **not set mid-typing, set on completion**; glow `scale(1.02)` → `scale(1)` with `all 0.5s ease`; keeps running in the background while on the Calculator tab; no second run after completion; **values remain in the fields** (F6 resolution); user typing stops the demo (user value kept, key not set) |
+| Typewriter | types "Enter your home price here..." with `\|` cursor in the placeholder (value never touched); holds full text once the field has a value or focus |
+| Reduced motion | static full placeholder text (no timers); demo fills all values at once, key set immediately, no glow |
+
+**Baseline-file note (B cases):** the "Original Interest" figures in `BASELINE_CASES.md` §B (e.g. $408,142 for B4/B5) came from the Step 4 *independent Node re-implementation*, which used the unrounded contractual P&I. The original code **as executed** uses the rounded P&I (2,023) that its own auto-fill writes into the field after non-core-field edits, so it displays **$407,857** in the natural user flow — and the React production build matches the executed original **exactly** ($407,857). Both implementations agree; the baseline file's reference column predates executed-original verification and is the outlier. (A2's baseline row — "0% rejected" — was superseded by the approved F1 decision, which both the repo's `script.js` and the React app encode.)
+
+### Console / network audit (production bundle, all three jsdom sessions)
+
+- **Zero** console errors or warnings (production React strips dev-mode warnings; nothing was emitted at all).
+- **Zero** failed resource loads.
+- **Zero** app-level network calls during every interaction (fetch/XHR/WebSocket/sendBeacon were instrumented in the harness; bundle grep: no XHR/WebSocket/beacon — the sole `fetch(` in the bundle is Vite's standard modulepreload polyfill, and no such links exist in the single-chunk build). **Mortgage inputs are never transmitted.**
+- Only external requests: **Font Awesome** (cdnjs `<link>`) + **Google Fonts** (css2 `@import` in the stylesheet) — the same two CDNs the pre-migration page requested, both disclosed in the Step 13 privacy wording. **No Chart.js CDN.**
+
+### Chart (verified at the DOM level; pixels unverified)
+
+- Exactly **one** canvas (`#paymentChart`, aria-labelled) after a successful calculation; canvas **removed** on validation failure; **re-created** on the next successful calculation; no duplicate instances, no console errors from Chart.js (canvas 2D was a no-op stub in jsdom).
+- Segment colors are set explicitly to the original CDN-palette values (`rgb(54,162,235)` / `rgb(255,99,132)` / `rgb(255,159,64)` / `rgb(255,205,86)`) — the Step 11 parity mechanism; pixel-level rendering itself needs a real browser (see below).
+
+### Keyboard / a11y (verified at the DOM level)
+
+- All **17** form controls carry both a `label[for]` and an `aria-label`; error regions use `role="alert"`; the PITI figure is `aria-live="polite"`.
+- All controls focusable; **Get Started** focuses the price field and (per the bridge) switches to the Calculator tab.
+- Tab order in the built page (37 focusable elements) is logical: header nav → Get Started → main inputs (price → down-payment $/% toggle → down → rate → term → tax → insurance → HOA) → Calculate My Payment → magic fields → Calculate Savings → footer links.
+
+### Responsive layout (partial)
+
+- The built CSS contains the original's three media-query breakpoints (`@media (width<=480px)`, `(width<=768px)`, `(width<=900px)`).
+- Visual overflow / chart-resize behavior needs a real browser layout engine — **PENDING** below.
+
+### Minor observations (NOT regressions — nothing fixed)
+
+1. **Legacy button ids absent:** the migrated Calculate buttons have no `id="calcBtn"` / `id="magicCalcBtn"`. Verified nothing references those ids anywhere in the built output (grep over CSS, built HTML, and bundle: 0 hits), so there is no functional impact.
+2. **Redundant same-mode toggle click:** the original unconditionally re-ran `calculateMagic(false)` on a click of the *already-active* Monthly/One-time button (re-deriving the unrounded P&I — the $408,142 variant); the React app treats a same-mode click as a no-op (the $407,857 variant). The natural user flow — change mode, then enter an amount — matches the original **exactly**; only the redundant re-click differs, by a few display dollars.
+3. **Documented, approved deviations confirmed in production:** F1 (0% valid), F4 (term read from the text input; the dead select renamed `magicTermSelect` and never read), F6 (demo values remain after completion instead of the original's stale clear), F7 (explicit limit/non-amortizing warnings + `+` truncation suffix), validation-error reset to sentinel cards (original kept stale cards), reduced-motion static/instant behavior (Step 12 requirement), and the main-tab value demo (`runDemo`/`mpl_demo_seen`) intentionally **not** ported (dead code in the original).
+
+### Manual / visual checks (PENDING — no browser layout engine in this environment)
+
+1. Visual donut rendering: arc colors, bottom legend, hover tooltips (values/palette are unit-pinned; canvas was stubbed in jsdom).
+2. Mobile viewport (390–430 px): no horizontal overflow; chart resize behavior.
+3. Real-browser Tab-key traversal (DOM order verified above) and focus rings.
+4. Real-browser sessionStorage reload behavior (same-session no-re-run was verified in-process; a true page reload in this environment is a fresh jsdom instance).
+5. Everything from Step 13's PENDING list still applies (live deploy, share-card image, Search Console, domain-root fetches) — those require the `v1` push.
+
+### Files changed (this step)
+
+| File | Change |
+|------|--------|
+| `MIGRATION_STATUS.md` | Step 14 marked COMPLETE (this update) |
+
+Verification harnesses were temporary (`/tmp/verify-production.mjs`, `/tmp/ref-original.mjs`, `/tmp/dbg*.mjs`, `/tmp/taborder.mjs`) and were **not** added to the repository.
+
+### Blockers
+
+**None.** Step 15 (GitHub Actions) is next.
+
+### Next task
+
+Step 15 — Update GitHub Actions: build `dist/` in CI and deploy it (the workflow change from Step 13 is in place but untested until the first CI run on the `v1` push).
+
+---
+
+# Step 15 Detail
+
+## Step 15: Update GitHub Actions — ✅ COMPLETE (CI run PENDING until the `v1` push)
+
+**Scope honored:** `.github/workflows/deploy.yml` updated for the Vite production flow. The deployed artifact is `dist/`, not the source tree. The production-branch (`v1`) restriction is preserved and extended to manual runs. No push, no deployment trigger, no DNS/CNAME/custom-domain changes, no application-code changes.
+
+### What changed in `.github/workflows/deploy.yml`
+
+| Area | Before (working tree at start of Step 15) | After |
+|------|-------------------------------------------|-------|
+| Triggers | `push` on `v1` + **unrestricted** `workflow_dispatch` | `push` on `v1` + `workflow_dispatch` **restricted to `v1`** — a manual run from any other branch can no longer publish |
+| Steps | checkout → setup-node 22 → `npm ci` → `npm run build` → configure-pages → upload `path: 'dist'` → deploy | checkout → setup-node 22 → `npm ci` → **`npm test`** → `npm run build` → configure-pages → upload `path: 'dist'` → deploy |
+| Action versions | checkout@v4, setup-node@v4, configure-pages@v4, upload-pages-artifact@v3, deploy-pages@v4 — all **Node 20 runtime** | checkout@v7, setup-node@v7, configure-pages@v6, upload-pages-artifact@v5, deploy-pages@v5 — all **Node 24 runtime** |
+| Comments | "Runs on pushes targeting the default branch" (v1 is not the default branch); job comment "no build step needed" (stale, from the committed pre-Step-13 version) | "…targeting the production branch"; `workflow_dispatch` comment notes the branch restriction; job comment notes the Vite build (already present from Step 13) |
+
+The committed (HEAD) version of the workflow was still the pre-Step-13 no-build version (`path: '.'`); the Step 13 build steps were already in the working tree and are preserved unchanged.
+
+**Why the action versions had to change:** GitHub retired the Node 20 runtime for GitHub Actions on **2026-09-23** ("Node 20 is no longer available in GitHub Actions" — GitHub changelog, Retired). All five previously pinned majors declare `runs.using: node20` in their `action.yml`, so the workflow could no longer run at all. Each replacement was verified against its `action.yml`: current major, `node24` runtime, and identical input contract for everything the workflow uses (`path` on upload-pages-artifact; `node-version`/`cache` on setup-node; `token` on configure-pages/deploy-pages defaults to `github.token` in both). Node 22 is kept as the project Node version (LTS; satisfies Vite 8's `engines: ^20.19.0 || >=22.12.0`).
+
+**Preserved verbatim:** `permissions` (`contents: read`, `pages: write`, `id-token: write`), `concurrency` (`group: "pages"`, `cancel-in-progress: false`), `environment` (`github-pages` + `page_url`), `runs-on: ubuntu-latest`. There is no `pull_request` trigger, so pull requests are never deployed.
+
+### Verification (actual commands and results)
+
+| Check | Method | Result |
+|-------|--------|--------|
+| YAML syntax + structure | `npx -y yaml valid` + `yaml --json -1` parse of `deploy.yml` | **PASS** — parses cleanly; the parsed tree matches the intended triggers / permissions / concurrency / environment / step order |
+| Production branch restriction | Parsed `on.push.branches` and `on.workflow_dispatch.branches` | **PASS** — both `["v1"]`; the Actions-tab run button only appears on `v1`, and API dispatches from other branches are rejected |
+| Validation order | Parsed `jobs.deploy.steps` | **PASS** — sequential single job: checkout → setup-node → `npm ci` → `npm test` → `npm run build` → configure-pages → upload `dist` → deploy; any failing step stops the job before `deploy-pages` can run |
+| The exact CI sequence passes on this tree | `npm ci && npm test && npm run build` | **PASS** — `npm ci`: 0 vulnerabilities; `npm test`: 6 files, **162/162**; `npm run build`: 29 modules, no warnings (`dist/index.html` 19.01 kB, `index-BrptsVus.js` 406.24 kB, `index-W1v8K94i.css` 10.00 kB) |
+| Artifact contents | `find dist -type f` after the clean build | **PASS** — exactly 9 files: `index.html`, 2 hashed assets, `CNAME`, `robots.txt`, `sitemap.xml`, `googleb4f539193a03794c.html`, `preview.png`, `privacy.html`; no source tree, no `package.json`, single `index.html` |
+| Action versions currently supported | GitHub tags API + each action's `action.yml` | **PASS** — v7/v7/v6/v5/v5 are the current majors, all `node24`; every replaced major is `node20` (retired 2026-09-23); no input contract changes for the inputs this workflow sets |
+| No pull-request deployment | Parsed `on` | **PASS** — only `push` + `workflow_dispatch`, both `["v1"]` |
+| Permissions / environment / concurrency | Parsed document | **PASS** — identical to the pre-step values |
+| No push / no deployment trigger / no DNS, CNAME, custom-domain change | none issued; `git status` shows only `deploy.yml` + this file modified | **PASS** |
+
+### Files changed (this step)
+
+| File | Change |
+|------|--------|
+| `.github/workflows/deploy.yml` | Added `workflow_dispatch.branches: ["v1"]`; added the `npm test` step between `npm ci` and `npm run build`; bumped all five actions to the current Node 24 majors (required — Node 20 runtime retired 2026-09-23); corrected two stale comments (trigger comment, job comment). Step 13's build steps and the `dist` upload path preserved. |
+| `MIGRATION_STATUS.md` | Step 15 marked COMPLETE (this update) |
+
+### Manual / CI checks (PENDING — happen when the user pushes to `v1`)
+
+1. Push of the migration commits to `v1` → workflow runs: checkout → setup-node 22 → `npm ci` → `npm test` → `npm run build` → upload `dist` → deploy-pages.
+2. Actions tab: "Run workflow" is offered on `v1` only (not on `main`/`watson`); a manual run on `v1` deploys `dist/`.
+3. After deploy: `https://mortgagepayofflab.com/` serves the built app — Step 13/14's PENDING live checks carry over (privacy page, CNAME, share-card image, Search Console file, `/robots.txt` + `/sitemap.xml`).
+
+### Blockers
+
+**None.**
+
+### Next task
+
+Step 16 — Remove obsolete code and update documentation (per `MIGRATION_PLAN.md`: after feature parity is confirmed, remove the unused legacy `script.js` and unused CDN dependencies — search for references before deleting or moving files — and update `README.md`).
+
+---
+
+# Step 16 Detail
+
+## Step 16: Remove obsolete code and update documentation — ✅ COMPLETE
+
+**Scope honored:** After Step 14 confirmed feature parity (92/92 against the executed original), the unused legacy `script.js` was removed, the CDN dependency audit found **no unused CDN to remove** (both remaining CDNs are live dependencies), two stray files that had been committed by accident in Step 8 were deleted, one stale comment in `index.html` was updated, one accidental `.gitignore` entry was removed, and `README.md` was rewritten to match the React/Vite reality. No application code was modified — `src/`, `style.css`, `public/`, `package.json`, `vite.config.js`, and the deploy workflow are untouched. No push, merge, or deploy.
+
+### Files deleted (this step)
+
+| File | Why it went |
+|------|-------------|
+| `script.js` | The legacy vanilla-JS reference implementation. Kept since Step 8 solely for the Step 14 side-by-side parity run, which completed with 92/92 matching display strings. Not loaded from `index.html` since Step 8; referenced by no `package.json` script, no `vite.config.js` setting, no `public/` file. Only remaining mentions are provenance comments in `src/` (deliberately kept — they document where each behavior was ported from) and the migration documents (historical record, per the plan). |
+| `Users/Watson/Documents/workspace/superinterface/src/components/ui/sheet.tsx` | Stray file from an unrelated project (someone's macOS home-directory path), committed by accident in Step 8 (`6bc5266`). Zero references anywhere in the repo. |
+| `qwen-tool-test.txt` | Tool-test artifact ("Qwen existing-file editing succeeded."), committed by accident in Step 8 (`6bc5266`). Zero references anywhere in the repo. |
+
+### Reference search (performed before deleting, as required)
+
+- `grep -rn "script.js"` across the repo (excluding `node_modules`/`dist`): hits in `index.html` (an HTML comment), `src/*` (comments/JSDoc only — verified line-by-line, none are imports, `require`, `<script src>`, or config references), and the migration documents (historical). No load path existed.
+- `grep` for `qwen-tool-test`, `superinterface`, `sheet.tsx`: zero references outside the files themselves.
+- `package.json` scripts: only `dev`/`build`/`preview`/`test` (all Vite/Vitest); no reference to `script.js`.
+
+### CDN dependency audit (no unused CDN found)
+
+| CDN | Status | Evidence |
+|-----|--------|----------|
+| Font Awesome 6.4.0 (cdnjs) | **In use — kept** | 10 `fa-`/`fas` usages in `index.html`, 8 in `PaymentCalculator.jsx`, 14 in `ExtraPaymentCalculator.jsx` |
+| Google Fonts — Outfit + Inter | **In use — kept** | `@import` at the top of `style.css`; `font-family: 'Outfit'`/`'Inter'` declarations throughout |
+| Chart.js (jsDelivr) | **Already removed in Step 11** | 0 matches in `index.html`/`dist` (regression-guarded since) |
+
+No other third-party `<script>`/`<link>` exists in `index.html` or `public/` (verified by grep). The two kept CDNs are the same two the pre-migration page requested, and both are disclosed in the Step 13 privacy wording.
+
+### Files modified (this step)
+
+| File | Change |
+|------|--------|
+| `index.html` | The stale Step 8 comment ("script.js is kept in the repo only for Step 14 parity checks; Step 16 removes it") updated to record that the removal now happened, post Step 14 verification. Nothing else touched. |
+| `.gitignore` | Removed a stray single-character `y` entry (accidental keystroke from the Step 6 edit; it would have ignored a file literally named `y`). All real entries preserved. |
+| `README.md` | Rewritten to match the repository (the plan's full list): Tech Stack now React 19 + Vite 8 + bundled chart.js/react-chartjs-2 + Vitest (was "vanilla JavaScript, no framework" + "Chart.js (CDN)"); the obsolete "No build step, no dependencies to install, no `package.json`" note removed; Project Structure updated (real `src/` breakdown, `package.json`/`package-lock.json`, migration documents; `script.js` line removed); Getting Started replaced (was "open index.html") with the Node requirement (`^20.19.0` or `>=22.12.0`, Node 22 LTS recommended — matching CI and the Vite `engines` field) and all five npm commands (`install`/`dev`/`test`/`build`/`preview`); Deployment now mentions the `npm test` CI step and that `workflow_dispatch` is `v1`-only; the "Privacy-First" claim re-scoped to match the Step 13 privacy-page wording (financial data processed locally, never transmitted; the two CDN font/icon requests disclosed); the main-calculator "real-time recalculation as you type" bullet corrected to button-driven (parity-verified in Step 14) with real-time recalculation attributed to the Magic tab where it is true; Contributing updated (AGENTS.md rules, npm commands instead of "open index.html"). How-the-Math-Works, SEO checklist, disclaimers, and the 600-month guard (now also noting the explicit warning) carried over. |
+
+### Verification (actual commands and results)
+
+| Check | Method | Result |
+|-------|--------|--------|
+| Full unit suite after deletions | `npm test` | **PASS** — 6 files, **162/162** |
+| Clean production build | `rm -rf dist && npm run build` | **PASS** — 29 modules, no warnings; `dist/index.html` 18.98 kB (gzip 5.11), `index-BrptsVus.js` 406.24 kB (gzip 130.41), `index-W1v8K94i.css` 10.00 kB — **asset hashes byte-identical to the Step 14/15 verified builds**, proving the deletion changed nothing in the output |
+| No obsolete code loaded | grep of `index.html`, `public/`, `package.json`, `vite.config.js` for `script.js` | **PASS** — 0 load references; the only `index.html` mention is the updated historical comment |
+| `dist/` contents | `find dist -type f` | **PASS** — exactly 9 files: `index.html`, 2 hashed assets, `CNAME`, `robots.txt`, `sitemap.xml`, `googleb4f539193a03794c.html`, `preview.png`, `privacy.html` |
+| CDN audit | grep for `fa-`/`fas`, `googleapis`, `cdn`, `jsdelivr` over `index.html`, `src/`, `style.css`, `public/` | **PASS** — Font Awesome + Google Fonts both actively used (kept); no Chart.js CDN; no other third-party resource |
+| Stray files unreferenced | grep for `qwen-tool-test`/`superinterface`/`sheet.tsx` | **PASS** — 0 references |
+| README matches the repo | Read against `package.json` scripts, Vite `engines`, actual tree | **PASS** — every documented command exists in `package.json`; Node requirement matches `engines: ^20.19.0 \|\| >=22.12.0`; structure tree matches the working tree; no "no build step" / "no package.json" claim remains |
+| Git diff is only the intended files | `git status --short` | **PASS** — `script.js` D, `Users/…` D, `qwen-tool-test.txt` D, `index.html` M, `.gitignore` M, `README.md` M, `MIGRATION_STATUS.md` M — nothing else |
+| No push/merge/deploy | none issued | **PASS** |
+
+### Checkpoint (per `MIGRATION_PLAN.md`)
+
+**"No obsolete code is loaded, and instructions match the repository."** — both halves verified: the built bundle is hash-identical to the pre-deletion one (nothing obsolete was ever loaded), and every README claim was checked against `package.json`, the Vite `engines` field, and the actual tree.
+
+### Manual / CI checks (PENDING — unchanged, happen when the user pushes to `v1`)
+
+Carried over from Steps 13/14/15: live deploy of `dist/`, share-card image, Search Console verification, domain-root fetches, and the CI run itself.
+
+### Blockers
+
+**None.**
+
+### Next task
+
+Step 17 — Review and commit (per `MIGRATION_PLAN.md`: review the diff of each coherent step, commit after review; before release, `git diff before-react-migration..HEAD --stat`).
+
+---
+
+# Step 17 Detail
+
+## Step 17: Review and commit — ✅ COMPLETE
+
+**Scope honored:** Step 17 is the plan's review discipline — per completed step, review `git diff --stat` / `git diff` / `git status` and commit only intended files; before release, run `git diff before-react-migration..HEAD --stat`. Steps 3–16 each performed their own in-session diff review before committing; this step performs the cross-cutting release review over the whole migration footprint.
+
+### Locating the pre-migration base
+
+The plan's release command references a `before-react-migration` ref that did not exist in this clone (Steps 1–2 are "not recorded in this file / not verifiable" per the Step 3 section). The history was inspected (one merge deep in the past, otherwise linear) and `be6da0c` — "The 'Calculate My Payment' button was fixed.", the last commit of the original vanilla site and the direct parent of `060fc3e` ("migration_plan was created.") — was identified as the pre-migration base. A lightweight local tag `before-react-migration` was created at that commit.
+
+> Note: the Step 14 record referred to `02af58e` as the "pre-migration original", but that commit is actually mid-migration ("Steps 5-7: persistent instructions, Vite setup, extract and test calculation modules"). Its static public files were still pre-migration content, so the byte-for-byte comparisons made against it were valid; the true pre-migration base is `be6da0c`.
+
+### Pre-release CI gate (the exact CI sequence)
+
+| Check | Method | Result |
+|-------|--------|--------|
+| Reproducible install | `npm ci` (fresh) | **PASS** — 0 vulnerabilities |
+| Full unit suite | `npm test` | **PASS** — 6 files, **162/162** |
+| Production build | `npm run build` | **PASS** — 29 modules, no warnings; asset hashes identical to the Step 14/15/16 verified builds |
+| Working tree clean | `git status --short` | **PASS** — empty; nothing uncommitted |
+
+### Release diff review (`git diff before-react-migration..HEAD --stat`)
+
+**37 files, +8,776 / −998.** Every file is an intended migration change; nothing else in the tree differs from the pre-migration base:
+
+| Group | Files | Note |
+|-------|-------|------|
+| Migration docs (new) | `MIGRATION_PLAN.md`, `MIGRATION_STATUS.md`, `MIGRATION_AUDIT.md`, `BASELINE_CASES.md`, `AGENTS.md` | History + agent instructions; kept deliberately (plan: "keep historical details in the migration documents") |
+| React app (new) | `src/main.jsx`, `src/App.jsx`, `src/navBridge.js`, 3 components + 3 component tests, 5 pure libs + 4 lib test suites | All math is pure/UI-free and test-covered |
+| Original app | `index.html` (static calculator markup removed, wording fixes), `script.js` (−579, deleted in Step 16), `style.css` (untouched — correctly absent from the diff, per AGENTS.md "reuse the existing CSS") | |
+| Static assets | `CNAME`, `robots.txt`, `sitemap.xml`, `preview.png`, `googleb4f539193a03794c.html` → `public/` (pure renames, 0-line diffs); `privacy.html` → `public/` (+20, Step 13 wording fixes) | All public URLs preserved |
+| Tooling (new) | `package.json`, `package-lock.json`, `vite.config.js` | |
+| CI | `.github/workflows/deploy.yml` (+32) | Vite build flow (Step 13) + test step / action versions / dispatch restriction (Step 15) |
+| README | `README_watson.md` → `README.md` (renamed; rewritten in Step 16), `README_blake.md` deleted | see finding below |
+| `.gitignore` | Step 6 additions − the stray `y` entry (Step 16) | |
+
+**Finding from the release review (previously committed; no action needed):** the README consolidation (`README_watson.md` → `README.md`, deletion of `README_blake.md`) was done in the **Step 3 commit** (`574e937`, 2026-09-19), not in Steps 13/16. It is already part of reviewed history, and the current `README.md` is the single up-to-date one; recorded here so the release diff review is complete.
+
+### Checkpoint (per `MIGRATION_PLAN.md`)
+
+- "Commit after reviewing each coherent step, rather than waiting until the end" — **satisfied**: 14 migration commits, one per coherent step (Steps 3–17).
+- "Before release: `git diff before-react-migration..HEAD --stat`" — **run and reviewed** (above), from a clean tree, after a fresh `npm ci` + full test + build pass.
+
+### Blockers
+
+**None. All 17 steps of the migration plan are complete.** The only remaining action is the user's release decision: push `watson` to `v1` to trigger the CI deploy, followed by the carried-over live-site checks from Steps 13–15. Per AGENTS.md the agent does not push/merge/deploy.
+
+---
+
+# Overall Migration Status — COMPLETE (end of step 17 session)
 
 | Step | Status |
 |------|--------|
@@ -291,7 +874,11 @@ The audit is complete, saved to `MIGRATION_AUDIT.md`, and verified against the a
 | 7 — Extract & test calculation modules | ✅ |
 | 8 — React-ify the calculator area | ✅ |
 | 9 — Interactive parity (main calculator) | ✅ |
-| 10 — Convert Extra Payment Magic tab | ✅ |
-| 11 — Integrate the chart | ⏳ **NEXT** |
-| 12–16 | ⏳ |
-
+| 10 — Extra Payment Magic parity | ✅ (browser checks PENDING) |
+| 11 — Integrate the chart | ✅ (browser check PENDING) |
+| 12 — Reintroduce animations and the demo | ✅ (browser checks PENDING) |
+| 13 — Preserve static files, privacy, SEO | ✅ (this session; deploy/share-card checks PENDING until the `v1` push) |
+| 14 — Production verification | ✅ (this session; visual + deploy checks PENDING) |
+| 15 — Update GitHub Actions | ✅ (this session; CI run PENDING until the `v1` push) |
+| 16 — Delete legacy files & docs cleanup | ✅ (this session; no pending checks of its own — Step 13/14/15 deploy+visual checks still pending the `v1` push) |
+| 17 — Review and commit | ✅ (this session; `before-react-migration` tag created at `be6da0c`; release diff reviewed: 37 files, +8776/−998, all intended) |

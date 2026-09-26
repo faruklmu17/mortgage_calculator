@@ -48,9 +48,12 @@ export default function CalculatorApp() {
 
   function handleSwitchTab(tab) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    // The original navExtra handler re-ran the Calculator → Magic sync
+    // check on EVERY "Extra Payment Magic" click (even when already on
+    // that tab), so the seed is bumped before the same-tab early return.
+    if (tab === 'magic') setSeedNonce((n) => n + 1);
     if (tab === activeTab) return;
     setActiveTab(tab);
-    if (tab === 'magic') setSeedNonce((n) => n + 1);
   }
 
   useEffect(() => {
