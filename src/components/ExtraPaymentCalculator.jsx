@@ -1,51 +1,100 @@
-// Step 8: Extra Payment Magic tab.
+// Step 10: Extra Payment Magic tab — submitted-snapshot + derive pattern.
 //
-// All extra-payment state lives in this component (magic* fields, extra
-// mode, magic result/error). Shared main-tab inputs arrive as props for
-// the one-time main → magic sync that the original script.js did on
-// "Extra Payment Magic" nav-link click (only when the magic form's price
-// field was empty on first switch, latched via didSync useRef).
+// Mirrors Step 9's PaymentCalculator refactor: the only "calculated inputs"
+// state value is `submitted` (a snapshot of the raw magic field strings +
+// the extra-mode + the isPIOverride trigger taken at the moment of the
+// user action that fired the recalc). The displayed result (including the
+// error message and the new Step 10 non-success messaging per F7) is
+// derived from `submitted` on every render by the pure
+// `deriveExtraPaymentResult` helper in `src/lib/extraMagic.js` — no
+// formatted or derived value is stored in state.
 //
-// The calculation mirrors script.js#calculateMagic verbatim, via the
-// Step-7 pure modules. `isPIOverride` semantics are preserved: core
-// fields (price, down, rate, term) trigger P&I recalculation; balance/
-// tax/insurance/extra / manual P&I fields preserve a user-entered P&I.
+// DOM behavior preserved from Step 8 (and from original script.js):
+//   - Same DOM structure, CSS classes, IDs, labels, aria attributes.
+//   - Same isPIOverride semantics: core-edits recalculate P&I and
+//     auto-fill the field; non-core-edits honor a manual P&I.
+//   - Same one-time main → magic sync driven by `seedNonce` (only once,
+//     only when magic price is empty and main price > 0).
+//   - Same "on-blur format" behavior on numeric fields (preserved from
+//     Step 8 for balance / price / down / tax / insurance).
+//   - Same toggle button behavior for Monthly vs One-time.
 //
-// Fidelity notes:
-//   - The original savingsMessage used innerHTML when positive (with
-//     <strong> markup) and textContent otherwise. We preserve the same
-//     distinction with a `savingsIsHtml` flag driving
-//     dangerouslySetInnerHTML vs. plain-text rendering.
-//   - savedPositive keys on `interestSaved > 0`, matching the original
-//     exactly.
+// Step 10 requirements honored here:
+//   #1 P&I / balance / mode — all preserved (see `submitted`).
+//   #2 Lump-sum timing (month 1), rounding, manual P&I overrides,
+//      tab sync — preserved (see `deriveExtraPaymentResult`).
+//   #3 Contractual P&I computed from the ORIGINAL loan, never from the
+//      current balance (see `deriveExtraPaymentResult`).
+//   #4 Taxes & insurance are display-only (PITI) — excluded from the
+//      payoff simulation.
+//   #5 Baseline + accelerated payoff time and interest + time saved +
+//      interest saved — all derived.
+//   #6 0% interest, zero extra, oversized extras, small final payment —
+//      handled by `simulatePayoff` / `deriveExtraPaymentResult` (tests
+//      in `src/lib/extraMagic.test.js`).
+//   #7 Non-success (non-amortizing, 600-month limit) — surfaced with a
+//      clear warning; never presented as a "successful" payoff.
+//   #8 Raw input strings preserved while editing; same styling; NaN /
+//      Infinity never displayed.
+//
+// One-time main → magic sync (Step 8 note #2 / Step 10 req #2):
+//   - Fires **only once** per session (latched via `didSync`).
+//   - Fires **only when** main price > 0, magic price is empty, and
+//     `seedNonce > 0`.
+//   - On fire: copies the main tab's loan fields into the magic fields
+//     (price/down/rate/term/tax/insurance), sets `magicBalance` to
+//     `price - downPayment`, commits the synced snapshot as the new
+//     `submitted`, and triggers a recalculation.
+//   - If the magic price is NOT empty, the sync is skipped (preserving
+//     the user's existing magic inputs); the tab still shows the last
+//     committed result (or the BLANK state if none yet).
 
 import { useEffect, useRef, useState } from 'react';
+import { parseNumeric } from '../lib/validation.js';
 import {
-  parseNumeric,
-  parseInterestRate,
-} from '../lib/validation.js';
-import { calculateMortgage } from '../lib/mortgage.js';
-import { simulatePayoff } from '../lib/amortization.js';
-import {
-  formatCurrency,
-  formatDurationSpan,
-  formatShortDuration,
-} from '../lib/formatting.js';
+  deriveExtraPaymentResult,
+} from '../lib/extraMagic.js';
 
-const INITIAL_RESULT = {
-  interestSaved: '$0',
-  timeSaved: '0 years',
-  standardRemaining: '30 Years',
-  newPayoffTime: '30 Years',
-  originalInterest: '$0',
-  newTotalInterest: '$0',
-  newTotalMonthly: '$0',
-  savingsMessage: 'Enter your details to see the magic happen!',
-  savingsColor: 'inherit',
-  savingsIsHtml: false,
-};
+const CORE_KEYS = new Set([
+  'magicPrice',
+  'magicDownPayment',
+  'magicRate',
+  'magicTermText',
+  'magicTermSelect',
+]);
+const NON_CORE_KEYS = new Set([
+  'magicBalance',
+  'magicTax',
+  'magicInsurance',
+  'extraAmount',
+  'magicMonthlyPI',
+]);
+
+/**
+ * Strip the `__`-prefixed bookkeeping keys off a snapshot before returning
+ * it to `deriveExtraPaymentResult`. The pure module only reads the 10
+ * magic field names and ignores unknown keys — but we keep this small
+ * helper so the call-site reads cleanly.
+ */
+function fieldOnly(submitted) {
+  if (!submitted) return null;
+  const out = {
+    magicPrice: submitted.magicPrice,
+    magicDownPayment: submitted.magicDownPayment,
+    magicBalance: submitted.magicBalance,
+    magicRate: submitted.magicRate,
+    magicTermText: submitted.magicTermText,
+    magicTermSelect: submitted.magicTermSelect,
+    magicTax: submitted.magicTax,
+    magicInsurance: submitted.magicInsurance,
+    magicMonthlyPI: submitted.magicMonthlyPI,
+    extraAmount: submitted.extraAmount,
+  };
+  return out;
+}
 
 export default function ExtraPaymentCalculator({ mainInputs, seedNonce }) {
+  // Draft strings for the 10 magic-tab fields. Always user-editable.
   const [magicInputs, setMagicInputs] = useState({
     magicPrice: '',
     magicDownPayment: '',
@@ -58,127 +107,50 @@ export default function ExtraPaymentCalculator({ mainInputs, seedNonce }) {
     magicMonthlyPI: '',
     extraAmount: '',
   });
+  // Extra-payment mode in effect ('monthly' | 'one-time').
   const [extraMode, setExtraMode] = useState('monthly');
-  const [magicErrorMsg, setMagicErrorMsg] = useState('');
-  const [result, setResult] = useState(INITIAL_RESULT);
-  const magicMonthlyPIRef = useRef(null);
+  // The ONLY "calculated inputs" state value in this component: a snapshot
+  // of the raw field strings + the isPIOverride trigger + the mode at the
+  // moment of the user action that last fired a recalculation. `null`
+  // before the first such action.
+  const [submitted, setSubmitted] = useState(null);
+  const piFieldRef = useRef(null);
   const didSync = useRef(false);
 
-  function calculate(inputs, calcMode, isPIOverride) {
-    setMagicErrorMsg('');
+  // Derived on every render — never stored (AGENTS.md / Step 9 pattern).
+  // The `__isPIOverride` flag is what was in effect at the moment the
+  // recalc was triggered; it is the same flag `script.js#calculateMagic`
+  // received as an argument.
+  const derived = deriveExtraPaymentResult(
+    fieldOnly(submitted),
+    extraMode,
+    (submitted && submitted.__isPIOverride) === true
+  );
+  const result = derived; // named for readability at JSX call-sites
+  const errorMsg = result.errorMsg || '';
 
-    const price = parseNumeric(inputs.magicPrice);
-    const downPayment = parseNumeric(inputs.magicDownPayment);
-    const currentBalanceInput = parseNumeric(inputs.magicBalance);
-    const ratePercent = parseNumeric(inputs.magicRate);
-    const termYearsRaw =
-      parseNumeric(inputs.magicTermText) ||
-      parseNumeric(inputs.magicTermSelect);
-    const extraPayment = parseNumeric(inputs.extraAmount);
-    const monthlyTax = parseNumeric(inputs.magicTax) / 12;
-    const monthlyInsurance = parseNumeric(inputs.magicInsurance) / 12;
-
-    const originalPrincipal = price - downPayment;
-    const startingBalance =
-      currentBalanceInput > 0 ? currentBalanceInput : originalPrincipal;
-
-    const rawRateNumber = parseInterestRate(inputs.magicRate);
-    if (
-      price <= 0 ||
-      (currentBalanceInput <= 0 && downPayment >= price) ||
-      !(rawRateNumber >= 0) ||
-      !(termYearsRaw > 0)
-    ) {
-      setMagicErrorMsg('Please enter valid mortgage details.');
-      return;
-    }
-
-    const calculatedPI =
-      calculateMortgage({
-        price,
-        downPayment,
-        annualRatePercent: ratePercent,
-        termYears: termYearsRaw,
-      }).monthlyPI;
-
-    let standardMonthlyPI = parseNumeric(inputs.magicMonthlyPI);
-    if (standardMonthlyPI <= 0 || !isPIOverride) {
-      standardMonthlyPI = calculatedPI;
-      const roundedStr = Math.round(standardMonthlyPI).toLocaleString();
-      if (inputs.magicMonthlyPI !== roundedStr) {
-        setMagicInputs((prev) => ({ ...prev, magicMonthlyPI: roundedStr }));
-      }
-    }
-
-    const isMonthly = calcMode === 'monthly';
-    const baseline = simulatePayoff({
-      startingBalance,
-      contractualMonthlyPI: standardMonthlyPI,
-      annualRatePercent: ratePercent,
-      monthlyExtra: 0,
-      oneTimeExtra: 0,
-    });
-    const accelerated = simulatePayoff({
-      startingBalance,
-      contractualMonthlyPI: standardMonthlyPI,
-      annualRatePercent: ratePercent,
-      monthlyExtra: isMonthly ? extraPayment : 0,
-      oneTimeExtra: !isMonthly ? extraPayment : 0,
-    });
-
-    const baselineInterest = baseline.totalInterest;
-    const baselineMonths = baseline.months;
-    const newTotalInterest = accelerated.totalInterest;
-    const monthsToPayoff = accelerated.months;
-
-    const interestSaved = baselineInterest - newTotalInterest;
-    const monthsSaved = baselineMonths - monthsToPayoff;
-
-    const savedPositive = interestSaved > 0;
-    setResult({
-      interestSaved: formatCurrency(Math.max(0, interestSaved)),
-      timeSaved: formatDurationSpan(monthsSaved),
-      standardRemaining: formatShortDuration(baselineMonths),
-      newPayoffTime: formatShortDuration(monthsToPayoff),
-      originalInterest: formatCurrency(baselineInterest),
-      newTotalInterest: formatCurrency(newTotalInterest),
-      newTotalMonthly: formatCurrency(standardMonthlyPI + monthlyTax + monthlyInsurance),
-      savingsMessage: savedPositive
-        ? `By paying <strong>${formatCurrency(extraPayment)}</strong> extra ${
-            isMonthly ? 'every month' : 'one-time'
-          }, you'll save <strong>${formatCurrency(interestSaved)}</strong> in total interest!`
-        : 'Increase your extra payment to see how much you can save!',
-      savingsColor: savedPositive ? 'var(--secondary)' : 'inherit',
-      savingsIsHtml: savedPositive,
-    });
-  }
-
-  function updateMagicInput(key, value) {
-    const next = { ...magicInputs, [key]: value };
-    setMagicInputs(next);
-
-    const isCore =
-      key === 'magicPrice' ||
-      key === 'magicDownPayment' ||
-      key === 'magicRate' ||
-      key === 'magicTermText' ||
-      key === 'magicTermSelect';
-    calculate(next, extraMode, !isCore);
-  }
-
-  function handleCalculate() {
-    calculate(magicInputs, extraMode, false);
-  }
-
-  function selectExtraMode(mode) {
-    if (mode === extraMode) return;
-    setExtraMode(mode);
-    calculate(magicInputs, mode, false);
-  }
-
-  // One-time main → magic sync.
+  // ── Auto-fill the magicMonthlyPI field when the derive says to ──
+  // Only when (a) `piAutoFill` is not null (we are NOT honoring a manual
+  // override) AND (b) the PI field is not currently focused (the
+  // original's `document.activeElement !== magicMonthlyPI` guard —
+  // Step 8 note #1 carries through).
+  // Keyed on the auto-fill string itself so it only fires when the value
+  // would actually change for a calculation (not on unrelated re-renders).
+  const piAutoFill = result.piAutoFill;
   useEffect(() => {
-    if (seedNonce <= 0) return;
+    if (piAutoFill == null) return;
+    const el = piFieldRef.current;
+    if (el && document.activeElement === el) return;
+    setMagicInputs((prev) =>
+      prev.magicMonthlyPI === piAutoFill
+        ? prev
+        : { ...prev, magicMonthlyPI: piAutoFill }
+    );
+  }, [piAutoFill]);
+
+  // ── One-time main → magic sync (Step 8 note #2 / Step 10 req #2) ──
+  useEffect(() => {
+    if (!seedNonce || seedNonce <= 0) return;
     if (didSync.current) return;
     didSync.current = true;
 
@@ -188,7 +160,7 @@ export default function ExtraPaymentCalculator({ mainInputs, seedNonce }) {
 
     const down = parseNumeric(mainInputs.downPayment);
     const principal = mainPrice - down;
-    const next = {
+    const synced = {
       ...magicInputs,
       magicPrice: mainInputs.price,
       magicDownPayment: mainInputs.downPayment,
@@ -198,11 +170,75 @@ export default function ExtraPaymentCalculator({ mainInputs, seedNonce }) {
       magicTermSelect: String(mainInputs.term || '30'),
       magicTax: mainInputs.tax,
       magicInsurance: mainInputs.insurance,
+      extraAmount: '',
+      magicMonthlyPI: '',
     };
-    setMagicInputs(next);
-    calculate(next, extraMode, false);
+    setMagicInputs(synced);
+    // Commit the synced snapshot with a core trigger (isPIOverride=false)
+    // so the PI auto-fills per the original behavior.
+    setSubmitted({
+      ...synced,
+      __isPIOverride: false,
+      __modeAtCommit: extraMode,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seedNonce]);
+
+  // ── Field handlers ──
+
+  function updateMagicInput(key, value) {
+    const next = { ...magicInputs, [key]: value };
+    setMagicInputs(next);
+
+    const isCore = CORE_KEYS.has(key);
+    const isNonCore = NON_CORE_KEYS.has(key);
+    // Original semantics: any input in the magic form recalculates,
+    // passing isPIOverride = isNonCore (true for the 5 non-core fields,
+    // false for the 5 core fields).
+    if (isCore || isNonCore) {
+      setSubmitted({
+        ...next,
+        __isPIOverride: isNonCore,
+        __modeAtCommit: extraMode,
+      });
+    }
+    // Keys not in either set are inert (none exist today).
+  }
+
+  function handleCalculate() {
+    // Original: Calculate-Savings recalcs with isPIOverride=false
+    // (PI auto-fills) using the current field values.
+    setSubmitted({
+      ...magicInputs,
+      __isPIOverride: false,
+      __modeAtCommit: extraMode,
+    });
+  }
+
+  function selectExtraMode(mode) {
+    if (mode === extraMode) return;
+    setExtraMode(mode);
+    // Original: every toggle click recalcs with the current field values
+    // (isPIOverride=false).
+    setSubmitted({
+      ...magicInputs,
+      __isPIOverride: false,
+      __modeAtCommit: mode,
+    });
+  }
+
+  // ── Blur formatters (preserved from Step 8) ──
+  function blurNumeric(key) {
+    return (e) => {
+      const val = parseNumeric(e.target.value);
+      if (val > 0) {
+        setMagicInputs((prev) => ({
+          ...prev,
+          [key]: val.toLocaleString('en-US'),
+        }));
+      }
+    };
+  }
 
   return (
     <>
@@ -253,7 +289,11 @@ export default function ExtraPaymentCalculator({ mainInputs, seedNonce }) {
               <div className="tooltip-container">
                 <i
                   className="fas fa-info-circle"
-                  style={{ fontSize: '0.8rem', cursor: 'help', color: 'var(--text-muted)' }}
+                  style={{
+                    fontSize: '0.8rem',
+                    cursor: 'help',
+                    color: 'var(--text-muted)',
+                  }}
                 ></i>
                 <span className="tooltip-text">
                   We calculated this based on your original loan. Change this if
@@ -262,14 +302,17 @@ export default function ExtraPaymentCalculator({ mainInputs, seedNonce }) {
               </div>
             </label>
             <div className="input-wrapper">
-              <i className="fas fa-file-invoice-dollar" style={{ color: 'var(--primary)' }}></i>
+              <i
+                className="fas fa-file-invoice-dollar"
+                style={{ color: 'var(--primary)' }}
+              ></i>
               <input
                 type="text"
                 id="magicMonthlyPI"
                 placeholder="2,500"
                 aria-label="Monthly Principal and Interest"
                 value={magicInputs.magicMonthlyPI}
-                ref={magicMonthlyPIRef}
+                ref={piFieldRef}
                 onChange={(e) => updateMagicInput('magicMonthlyPI', e.target.value)}
               />
             </div>
@@ -278,7 +321,10 @@ export default function ExtraPaymentCalculator({ mainInputs, seedNonce }) {
         <div className="input-group">
           <label htmlFor="magicBalance">Current Loan Balance ($)</label>
           <div className="input-wrapper">
-            <i className="fas fa-money-bill-trend-up" style={{ color: 'var(--secondary)' }}></i>
+            <i
+              className="fas fa-money-bill-trend-up"
+              style={{ color: 'var(--secondary)' }}
+            ></i>
             <input
               type="text"
               id="magicBalance"
@@ -286,6 +332,7 @@ export default function ExtraPaymentCalculator({ mainInputs, seedNonce }) {
               aria-label="Current Loan Balance"
               value={magicInputs.magicBalance}
               onChange={(e) => updateMagicInput('magicBalance', e.target.value)}
+              onBlur={blurNumeric('magicBalance')}
             />
           </div>
         </div>
@@ -302,6 +349,7 @@ export default function ExtraPaymentCalculator({ mainInputs, seedNonce }) {
                 aria-label="Home Purchase Price"
                 value={magicInputs.magicPrice}
                 onChange={(e) => updateMagicInput('magicPrice', e.target.value)}
+                onBlur={blurNumeric('magicPrice')}
               />
             </div>
           </div>
@@ -316,6 +364,7 @@ export default function ExtraPaymentCalculator({ mainInputs, seedNonce }) {
                 aria-label="Down Payment Amount"
                 value={magicInputs.magicDownPayment}
                 onChange={(e) => updateMagicInput('magicDownPayment', e.target.value)}
+                onBlur={blurNumeric('magicDownPayment')}
               />
             </div>
           </div>
@@ -364,6 +413,7 @@ export default function ExtraPaymentCalculator({ mainInputs, seedNonce }) {
                 aria-label="Annual Property Tax"
                 value={magicInputs.magicTax}
                 onChange={(e) => updateMagicInput('magicTax', e.target.value)}
+                onBlur={blurNumeric('magicTax')}
               />
             </div>
           </div>
@@ -381,13 +431,19 @@ export default function ExtraPaymentCalculator({ mainInputs, seedNonce }) {
                 aria-label="Annual Homeowners Insurance"
                 value={magicInputs.magicInsurance}
                 onChange={(e) => updateMagicInput('magicInsurance', e.target.value)}
+                onBlur={blurNumeric('magicInsurance')}
               />
             </div>
           </div>
           <div className="input-group">
             <div
               className="label-row"
-              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '10px',
+              }}
             >
               <label htmlFor="extraAmount" style={{ marginBottom: 0 }}>
                 Extra Payment
@@ -437,9 +493,9 @@ export default function ExtraPaymentCalculator({ mainInputs, seedNonce }) {
         <div
           className="error-msg"
           role="alert"
-          style={magicErrorMsg ? { display: 'block' } : { display: 'none' }}
+          style={errorMsg ? { display: 'block' } : { display: 'none' }}
         >
-          {magicErrorMsg}
+          {errorMsg}
         </div>
       </article>
 
@@ -460,12 +516,7 @@ export default function ExtraPaymentCalculator({ mainInputs, seedNonce }) {
           </div>
           <div
             className="pi-sub-label"
-            style={{
-              fontSize: '1rem',
-              color: '#fff',
-              marginTop: '10px',
-              fontWeight: 600,
-            }}
+            style={{ fontSize: '1rem', color: '#fff', marginTop: '10px', fontWeight: 600 }}
           >
             Time Saved:{' '}
             <span style={{ color: 'var(--secondary)' }}>{result.timeSaved}</span>

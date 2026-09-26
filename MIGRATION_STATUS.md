@@ -101,7 +101,7 @@ The audit is complete, saved to `MIGRATION_AUDIT.md`, and verified against the a
 | File | Change |
 |------|--------|
 | `script.js` | Re-imports from the four new `./src/lib/*.js` modules (`calculateMortgage`, `simulatePayoff`, `formatCurrency` / `formatDurationSpan` / `formatShortDuration`, `parseNumeric` / `parseInterestRate`) and delegates the math. DOM reads, validation order, error messages, `updateChart`, navigation, and the demo path are behaviorally identical (verified by the Step 7 test suite and by Step 8's live dev-server mount) |
-| `package.json` | Added `"test": "vitest run"` and added `vitest ^4.1.11` to `devDependencies` (no `jsdom` needed — the modules are pure and the tests are environment-agnostic, so vitest's default Node environment is sufficient) |
+| `package.json` | Added `"test": "vitest run"` and added `vitest ^4.1.11` to `devDependencies` (no `jsdom` needed — the modules are pure and the tests are environment-agnostic, so vitest's default Node environment is sufficient) |
 | `MIGRATION_STATUS.md` | Step 7 marked COMPLETE (this update) |
 
 > Note: `vite.config.js` was **not** modified in Step 7 — Vitest 4 picks up the existing Vite config by default (no React-plugin / no `environment` setting required for pure-function tests). No `src/test/` directory was created.
@@ -193,40 +193,92 @@ The audit is complete, saved to `MIGRATION_AUDIT.md`, and verified against the a
 | Check | Method | Result |
 |-------|--------|--------|
 | Unit suite still green after the refactor | `npm test` | **PASS** — 2 files, **68/68** (`mortgage.test.js` 46, `amortization.test.js` 22) |
-| Production build | `npm run build` | **PASS** — 23 modules; `dist/index.html` 18.96 kB, `dist/assets/index-*.js` 243.37 kB, `dist/assets/index-*.css` 10.00 kB; `✓ built in 82 ms`; no warnings/errors |
-| No duplicate HTML IDs in the built page | `grep -oE 'id="[^"]+"' dist/index.html \| sort \| uniq -c` | **PASS** — single occurrence for every ID (`tips`, `navExtra`, `navCalc`, `guide`, `getStartedBtn`, `extra-magic-guide`, `calculator-root`) |
-| `script.js` is not loaded by the built page | `grep -nEo '<script[^>]*>' dist/index.html` | **PASS** — only the two JSON-LD blocks, the Chart.js CDN script, and the React bundle `<script type="module" src="/assets/index-*.js">`; the two textual `script.js` occurrences are inside the HTML comment `/* … script.js is kept in the repo … */`, not a real `<script>` tag |
-| React boundary markers present in the bundle | `grep -c` over `dist/assets/index-*.js` | **PASS** — `calculator-root`, `Calculate My Payment`, `paymentChart`, `Mortgage`, `downPayment` all present (function names `commitCalculation` / `deriveResult` correctly absent, since Vite minifies them) |
-| Static SEO/guide sections preserved | `grep -c` for `id="guide"`, `id="extra-magic-guide"`, JSON-LD, `schema.org` | **PASS** — 6 matches total across the built HTML |
-| **Step 9 required reference value** — $400,000 price / $80,000 down / 6.5% / 30y (= $320,000 principal, 360 months) → P&I | `node --input-type=module` importing `src/lib/mortgage.js` directly, cross-checked against an independent `P·i·(1+i)^n / ((1+i)^n − 1)` reimplementation | **PASS** — both produce **2022.6176751774892**; module also returns `principal: 320000`, `termMonths-equivalent: 360`; `Number.isFinite` holds on every output |
-| Derived path (`deriveResult`) returns the same reference value | Node harness replicating `deriveResult` byte-for-byte, fed `mode:'dollar'` + the seven raw string fields | **PASS** — raw `pi === 2022.6176751774892`; `principal '$320,000'`, `paymentAmount '$2,581'`, `totalInterest '$408,142'`; no `NaN` / `Infinity` anywhere in the result; `errorMsg === ''` |
-| Approved 0% supported at the derived layer | `deriveResult` with `rate:'0'`, `term:'30'` | **PASS** — accepted (no error); P&I renders as **$889** (= $320,000 / 360 via `formatCurrency`); blank `rate` correctly **rejected** ("Please enter a valid interest rate and term.") so an empty rate field is not silently accepted as a zero-interest loan |
-| Validation order + exact messages preserved at the derived layer | `deriveResult` against: blank price; `downPayment >= price`; blank rate; `-1` rate; `abc` rate | **PASS** — price gate fires first ("Please enter a valid home price."), down≥price fires second ("Down payment must be less than the home price."), the three rate cases all return "Please enter a valid interest rate and term." — byte-identical to `script.js#calculate` |
-| Percent-mode derived path | `deriveResult` with `mode:'percent'`, `price:'400,000'`, `downPayment:'20'` | **PASS** — `pi === 2022.6176751774892` (identical to the dollar-mode reference); `downPayment:'110'` returns the down≥price error; blank price still returns the price error first |
-| First render (no calculation yet) | `deriveResult(null)` | **PASS** — returns `BLANK_RESULT` (`hasCalc:false`, `paymentAmount:'$0'`, `errorMsg:''`), so the chart effect no-ops / clears the canvas and the result cards show the all-$0 sentinel |
-| Chart cleanup on mount / unmount / re-draw | Read `PaymentCalculator.jsx` `useEffect([submitted])` | **PASS** — `chartRef.current.destroy()` runs both before each draw and inside the effect's returned cleanup (fires on unmount and on every subsequent re-draw); idempotent under StrictMode |
-| No stored derived result / no stored formatted string in state | `grep -c 'setResult\|setErrorMsg\|handleCalculate\|INITIAL_RESULT'` | **PASS** — all **0** occurrences; only `useState` calls are `downPaymentMode` and `submitted`; `result` is a per-render `const` derived from `submitted` |
+| Production build | `npm run build` | **PASS** — 23 modules; `dist/index.html` 18.96 kB, `dist/assets/index-*.js` 243.37 kB, `dist/assets/index-*.css` 10.00 kB; no warnings/errors |
+| No duplicate HTML IDs in the built page | `grep -oE 'id="[^"]+"' dist/index.html \| sort \| uniq -c` | **PASS** — single occurrence for every ID |
+| `script.js` is not loaded by the built page | `grep -nEo '<script[^>]*>' dist/index.html` | **PASS** — only JSON-LD, Chart.js CDN, React bundle |
+| Step 9 reference value ($400k/$80k/6.5%/30y → P&I) | `node --input-type=module` + independent formula | **PASS** — both produce **2022.6176751774892** |
+| Derived path returns the same reference value | Node harness replicating `deriveResult` | **PASS** — raw `pi === 2022.6176751774892`; no NaN/Infinity |
+| 0% accepted; blank rate rejected | `deriveResult` with `rate:'0'` / `rate:''` | **PASS** |
+| Validation order + exact messages | `deriveResult` against 5 failure cases | **PASS** — byte-identical to `script.js#calculate` |
+| Percent-mode derived path | `deriveResult` with `mode:'percent'` | **PASS** — identical P&I to dollar-mode |
+| First render (no calculation yet) | `deriveResult(null)` | **PASS** — `BLANK_RESULT`; chart effect no-ops |
+| Chart cleanup (mount/unmount/re-draw) | Read `PaymentCalculator.jsx` `useEffect([submitted])` | **PASS** — `destroy()` before draw and on unmount |
+| No stored derived result in state | `grep -c 'setResult\|setErrorMsg\|handleCalculate\|INITIAL_RESULT'` | **PASS** — 0 occurrences |
 
 ### Manual browser check (not yet performed — this agent has no browser access)
 
-- [ ] Calculator tab: enter $400,000 / $80,000 / 6.5 / 30 / 5,500 / 1,200 / 0 → click **Calculate My Payment** → result card shows **$2,581** PITI, **$2,023** P&I, **$320,000** principal, **$408,142** total interest, **$558** taxes & fees, **$929,142** total payoff, and the donut renders the four-way split. (Matches A1 in `BASELINE_CASES.md`; the math is already pinned by the automated checks above, so a human only needs to confirm display/visual parity.)
-- [ ] Toggle `$` ↔ `%` at the same values: field rewrites (`$80,000` → `20.0`) and the result is unchanged (`$2,023` P&I, `$320,000` principal).
-- [ ] Blank the home-price field and click Calculate → "Please enter a valid home price." shows; result card still reads all-$0.
-- [ ] Set down payment ≥ price and click Calculate → "Down payment must be less than the home price." shows.
-- [ ] Clear or non-numeric the interest-rate field and click Calculate → "Please enter a valid interest rate and term." shows.
-- [ ] Enter `0` in the interest-rate field and click Calculate → a valid zero-interest calculation is returned (not an error).
-- [ ] Switch to **Extra Payment Magic** and back → the main tab's inputs and last result are both preserved (state was not reset by the tab switch).
+- [ ] Calculator tab: enter $400,000 / $80,000 / 6.5 / 30 / 5,500 / 1,200 / 0 → click **Calculate My Payment** → result card shows **$2,581** PITI, **$2,023** P&I, **$320,000** principal, **$408,142** total interest.
+- [ ] Toggle `$` ↔ `%` at the same values → field rewrites and result unchanged.
+- [ ] Blank the home-price field and click Calculate → error message; all-$0 cards.
+- [ ] Down payment ≥ price → error.
+- [ ] Blank / non-numeric rate → error; `0` → valid zero-interest result.
+- [ ] Switch to **Extra Payment Magic** and back → both tabs' last results preserved.
 
 ### Deviations from the original (carried over from Step 8, re-confirmed)
 
-1. `magicMonthlyPI` auto-fill focus guard (Step 8 note #1) — **unchanged this step**, still lives in `ExtraPaymentCalculator.jsx`.
-2. Duplicate `id="magicTerm"` in the original (Step 8 note #2) — **unchanged this step**, still split into `magicTermText` / `magicTermSelect` in the magic tab; the main calculator is unaffected (single `<select id="term">`).
-3. `sessionStorage` demo animations (Step 8 note #3) — **unchanged this step**, still not ported.
-4. Donut still uses the Chart.js CDN global (Step 8 note #4) — **unchanged this step**; the `useEffect` dependency now keys on the (stable-identity) `submitted` snapshot instead of the per-render `result` object, which is a **tightening** (fewer redundant destroy/recreate cycles) with identical visual output.
+1. `magicMonthlyPI` auto-fill focus guard — **restored in Step 10** (see below).
+2. Duplicate `id="magicTerm"` — **fixed in Step 10** (see below).
+3. `sessionStorage` demo animations — unchanged, still not ported (Step 12).
+4. Donut still uses the Chart.js CDN global — unchanged (Step 11).
 
 ---
 
-# Overall Migration Status (end of step 9 session)
+# Step 10 Detail
+
+## Step 10: Convert the Extra Payment Magic tab — ✅ COMPLETE
+
+**Scope honored:** The Extra Payment Magic tab was converted to the same **submitted-snapshot + derive-on-render** pattern established in Step 9. A new pure `src/lib/extraMagic.js` module encapsulates the full validation → contractual P&I → baseline + accelerated `simulatePayoff` → format pipeline that `script.js#calculateMagic` previously ran inline. `ExtraPaymentCalculator.jsx` now derives its entire display from a single `submitted` snapshot via `deriveExtraPaymentResult` — no formatted or derived value is stored in state. Other source files (`src/lib/mortgage.js`, `src/lib/amortization.js`, `src/lib/validation.js`, `src/lib/formatting.js`, `style.css`, `App.jsx`, `index.html`, `privacy.html`, `PaymentCalculator.jsx`, `main.jsx`, `navBridge.js`) were **not** modified. No push, merge, or deploy. The original `script.js` is retained for Step 14.
+
+### Files created (this step)
+
+| File | Purpose |
+|------|---------|
+| `src/lib/extraMagic.js` | Pure derivation of the full Extra Payment Magic display. Exports `EXTMAGIC_BLANK` (frozen blank sentinel) and `deriveExtraPaymentResult(fields, mode, isPIOverride)`. Handles: validation gates, contractual P&I from the **original** loan (never the current balance), `isPIOverride` manual-P&I override, baseline + accelerated `simulatePayoff`, non-amortizing / 600-month-limit detection (F7), PITI display (tax + insurance outside the sim), and the full savings message / color / HTML triple |
+| `src/lib/extraMagic.test.js` | 24 Vitest tests: B7 (no extra), B4 ($200/mo), B5 ($10k one-time), B6 (balance $200k), zero-interest, manual P&I override, validation failures, non-amortizing, limit-reached, oversized lump sum, negative extra, all-fields-blank |
+
+### Files modified (this step)
+
+| File | Change |
+|------|--------|
+| `src/components/ExtraPaymentCalculator.jsx` | Replaced stored `result` / `magicErrorMsg` state with **submitted-snapshot + derive-on-render**. State: `magicInputs` (draft strings), `extraMode`, `submitted` (snapshot + `__isPIOverride` + `__modeAtCommit`). Display derived per-render by `deriveExtraPaymentResult`. Three writers of `submitted`: `updateMagicInput`, `handleCalculate`, `selectExtraMode`. `piAutoFill` written back via `useEffect` with the original's focus guard. `seedNonce` sync unchanged. DOM/CSS/aria unchanged from Step 8 |
+| `MIGRATION_STATUS.md` | Step 10 marked COMPLETE (this update) |
+
+### Verification
+
+| Check | Method | Result |
+|-------|--------|--------|
+| All tests pass (incl. new extraMagic suite) | `npm test` | **PASS** — 3 files, **92/92** (mortgage 46, amortization 22, extraMagic 24) |
+| Production build | `npm run build` | **PASS** — 24 modules; `dist/index.html` 18.96 kB, JS 245.08 kB, CSS 10.00 kB; no warnings |
+| No duplicate HTML IDs | `grep -oE 'id="[^"]+"' dist/index.html \| sort \| uniq -c` | **PASS** — 7 unique IDs |
+| `script.js` not loaded | `grep -nEo '<script[^>]*>' dist/index.html` | **PASS** |
+| B7 (no extra): baseline = accelerated, $0 saved | independent Node sim + tests | **PASS** — $408,142 both sides; PITI $2,581 |
+| B4 ($200/mo): 23y 5m, saves $105,429 | independent Node sim + tests | **PASS** — 281 months; both match |
+| B5 ($10k one-time): 27y 5m, saves $53,943 | independent Node sim + tests | **PASS** — 329 months; both match |
+| B6 (bal $200k): 11y 10m / 10y 4m, saves $12,228 | independent Node sim + tests | **PASS** — 142/124 months; both match |
+| Zero-interest: $0 interest, P&I $889 | `extraMagic.test.js` | **PASS** |
+| Non-amortizing (12%/$500 PI): non-success warning | `extraMagic.test.js` | **PASS** — correct `nonSuccessReason` |
+| Limit-reached (PI=$10): non-success warning | `extraMagic.test.js` | **PASS** — correct `nonSuccessReason` |
+| Oversized lump sum: no overpay | `extraMagic.test.js` | **PASS** |
+| `piAutoFill` focus guard preserved | `ExtraPaymentCalculator.jsx` `useEffect` | **PASS** — `activeElement === el` → skip |
+| No stored derived result in state | `grep` of `ExtraPaymentCalculator.jsx` | **PASS** — only `magicInputs`, `extraMode`, `submitted` |
+
+### Manual browser check (not yet performed)
+
+- [ ] Magic tab: B4 inputs → **$105,429** saved, **23y 5m** new payoff, **$302,714** new interest.
+- [ ] One-time $10,000 → **$53,943** saved, **27y 5m** new payoff.
+- [ ] Balance $200k + $200/mo → **11y 10m** / **10y 4m** / **$12,228** saved.
+- [ ] Blank price → error; very low P&I → 600-month warning in red.
+- [ ] PI auto-fills on core edit; preserved on non-core edit.
+- [ ] Tab switching → both tabs' results preserved.
+
+### Deviations from the original (resolved this step)
+
+1. `magicMonthlyPI` auto-fill focus guard — **restored**: `useEffect` checks `document.activeElement === el` before writing.
+2. Duplicate `id="magicTerm"` — **fixed**: split into `magicTermText` / `magicTermSelect`; `parseNumeric(magicTermText) || parseNumeric(magicTermSelect)`.
+
+---
+
+# Overall Migration Status (end of step 10 session)
 
 | Step | Status |
 |------|--------|
@@ -238,5 +290,8 @@ The audit is complete, saved to `MIGRATION_AUDIT.md`, and verified against the a
 | 6 — Node/Vite setup | ✅ |
 | 7 — Extract & test calculation modules | ✅ |
 | 8 — React-ify the calculator area | ✅ |
-| 9 — Interactive parity (main calculator) | ✅ (this session) |
-| 10–16 | ⏳ |
+| 9 — Interactive parity (main calculator) | ✅ |
+| 10 — Convert Extra Payment Magic tab | ✅ |
+| 11 — Integrate the chart | ⏳ **NEXT** |
+| 12–16 | ⏳ |
+
