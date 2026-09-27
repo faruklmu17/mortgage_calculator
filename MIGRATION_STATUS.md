@@ -600,6 +600,44 @@ them is pushed (Step 18, pending user authorization).
 
 ---
 
+# Step 16 Detail
+
+## Step 16: Remove obsolete code and update documentation — ✅ COMPLETE
+
+**Scope honored:** After feature parity (Steps 10/14) the obsolete legacy
+implementation was removed and the README now matches the repository. No
+push, merge, or deploy.
+
+### Files changed / removed
+
+| File | Change |
+|------|--------|
+| `script.js` | **Removed** (`git rm`). The legacy vanilla implementation is no longer loaded anywhere (index.html loads only `/src/main.jsx`); parity was confirmed in Steps 9–14. History of its behavior remains in `MIGRATION_AUDIT.md`, `BASELINE_CASES.md`, and git history. |
+| `index.html` | Comment above the React root updated (no longer claims `script.js` is kept in the repo). |
+| `src/main.jsx` | Header comment updated the same way. |
+| `README.md` | **Rewritten** to describe the migrated project: React 19 + Vite 8 + JavaScript/JSX (no TypeScript/routing/styling framework), Chart.js + react-chartjs-2 (bundled, no CDN), Vitest; Node 20.19+/22.12+ requirement (Node 22 LTS, same as CI); `npm install` / `dev` / `test` / `build` / `preview`; updated project structure (src/, public/, migration docs); GitHub Pages deployment **from `dist/`** with PR validation and `v1`-restricted manual runs; privacy wording corrected to "values you enter are never transmitted" + CDN/font/icon disclosure (consistent with the Step 13 privacy-page wording); obsolete "no build step / no package.json / static site, open the file" claims removed. Historical details remain in the four migration documents. |
+
+### Unused CDN dependencies check
+
+- Chart.js CDN — removed in Step 11.
+- Font Awesome + Google Fonts — still in use (icons/fonts on the main page
+  and the privacy page); kept.
+
+### Verification
+
+| Check | Method | Result |
+|-------|--------|--------|
+| Unit suite after removal | `npm test` | **PASS** — 92/92 |
+| Production build after removal | `npm run build` | **PASS** — no warnings; output identical in shape |
+| No dangling functional references to `script.js` | grep of html/jsx/js/json | **PASS** — only two intentional historical comments remain |
+| README matches repository | manual comparison | **PASS** — scripts, structure, deployment, and privacy claims all correspond to the actual files/workflow |
+
+### Manual check
+
+- [ ] `npm install && npm run dev` on a clean clone (fresh environment).
+
+---
+
 # Overall Migration Status (updated on `claude-all`, 2026-09-27)
 
 | Step | Status |
@@ -619,7 +657,7 @@ them is pushed (Step 18, pending user authorization).
 | 13 — Preserve static files, privacy, and SEO | ✅ |
 | 14 — Verify the production build | ✅ automated; browser checklist items PENDING |
 | 15 — Update GitHub Actions | ✅ (local; not pushed) |
-| 16 — Remove obsolete code and update documentation | ⏳ **NEXT** |
-| 17 — Review and commit | ✅ (each step committed as it completes) |
+| 16 — Remove obsolete code and update documentation | ✅ |
+| 17 — Review and commit | ✅ (each step committed; full diff reviewed below) |
 | 18 — Publish | ⛔ requires explicit user authorization (not performed) |
 
