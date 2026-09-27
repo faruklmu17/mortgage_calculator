@@ -1,23 +1,40 @@
 // Step 10: Extra Payment Magic tab — submitted-snapshot + derive pattern.
 //
 // Mirrors Step 9's PaymentCalculator refactor: the only "calculated inputs"
-// state value is `submitted` (a snapshot of the raw magic field strings +
-// the extra-mode + the isPIOverride trigger taken at the moment of the
-// user action that fired the recalc). The displayed result (including the
-// error message and the new Step 10 non-success messaging per F7) is
-// derived from `submitted` on every render by the pure
+// state value is `submitted` (a snapshot of the raw magic field strings
+// taken when a recalculation is committed). The displayed result
+// (including the error message and the Step 10 non-success messaging per
+// F7) is derived from `submitted` on every render by the pure
 // `deriveExtraPaymentResult` helper in `src/lib/extraMagic.js` — no
 // formatted or derived value is stored in state.
 //
+// Button-gated display (owner-requested fix after Step 17): the result
+// card stays blank until "Calculate Savings" is clicked. A recalculation
+// is committed ONLY by
+//   - the Calculate Savings button,
+//   - the Monthly / One-time toggle, and only while a result is already
+//     on screen (it refreshes with the new mode; it never reveals a
+//     blank result by itself),
+//   - the Step 12 intro demo (its scripted showcase, as in the original).
+// Typing in the fields and the main → magic tab-sync prefill the inputs
+// WITHOUT committing, so no value appears before the first button click.
+// (The original also recalculated on every `input` event; the owner
+// asked for the main-tab-style click-to-calculate UX instead — see
+// MIGRATION_STATUS.md.)
+//
 // DOM behavior preserved from Step 8 (and from original script.js):
 //   - Same DOM structure, CSS classes, IDs, labels, aria attributes.
-//   - Same isPIOverride semantics: core-edits recalculate P&I and
-//     auto-fill the field; non-core-edits honor a manual P&I.
-//   - Same one-time main → magic sync driven by `seedNonce` (only once,
-//     only when magic price is empty and main price > 0).
+//   - Same isPIOverride semantics at commit time: the Calculate Savings
+//     button and the mode toggle commit with isPIOverride=false, so the
+//     calculated P&I wins and auto-fills the field (the original's
+//     button behavior, preserved).
+//   - Same main → magic sync driven by `seedNonce` (only when magic
+//     price is empty and main price > 0) — but the sync no longer
+//     commits a recalculation (button-gated display, above).
 //   - Same "on-blur format" behavior on numeric fields (preserved from
 //     Step 8 for balance / price / down / tax / insurance).
-//   - Same toggle button behavior for Monthly vs One-time.
+//   - Same toggle button behavior for Monthly vs One-time, except the
+//     toggle only recalcs while a result is already on screen.
 //
 // Step 10 requirements honored here:
 //   #1 P&I / balance / mode — all preserved (see `submitted`).
@@ -43,9 +60,9 @@
 //   - Fires **only when** main price > 0 and the magic price is empty
 //     (preserving the user's existing magic inputs otherwise).
 //   - On fire: copies the main tab's loan fields into the magic fields
-//     (price/down/rate/term/tax/insurance), sets `magicBalance` to
-//     `price - downPayment`, commits the synced snapshot as the new
-//     `submitted`, and triggers a recalculation.
+//     (price/down/rate/term/tax/insurance) and sets `magicBalance` to
+//     `price - downPayment`. It does NOT commit a recalculation — the
+//     result card stays blank until Calculate Savings is clicked.
 //   - If the magic price is NOT empty, the sync is skipped; the tab still
 //     shows the last committed result (or the BLANK state if none yet).
 
@@ -55,21 +72,6 @@ import {
   deriveExtraPaymentResult,
 } from '../lib/extraMagic.js';
 import { useMagicDemo } from '../hooks/useMagicDemo.js';
-
-const CORE_KEYS = new Set([
-  'magicPrice',
-  'magicDownPayment',
-  'magicRate',
-  'magicTermText',
-  'magicTermSelect',
-]);
-const NON_CORE_KEYS = new Set([
-  'magicBalance',
-  'magicTax',
-  'magicInsurance',
-  'extraAmount',
-  'magicMonthlyPI',
-]);
 
 /**
  * Strip the `__`-prefixed bookkeeping keys off a snapshot before returning
@@ -202,13 +204,8 @@ export default function ExtraPaymentCalculator({ mainInputs, seedNonce, active }
         magicMonthlyPI: '',
       };
       setMagicInputs(synced);
-      // Commit the synced snapshot with a core trigger (isPIOverride=false)
-      // so the PI auto-fills per the original behavior.
-      setSubmitted({
-        ...synced,
-        __isPIOverride: false,
-        __modeAtCommit: extraModeRef.current,
-      });
+      // Button-gated display: prefill only — no recalculation commit, so
+      // no value appears until the user clicks Calculate Savings.
       effective = synced;
     }
 
@@ -227,24 +224,12 @@ export default function ExtraPaymentCalculator({ mainInputs, seedNonce, active }
     // abort it now and keep the user's text in this field.
     noteUserEdit(key);
 
-    const next = { ...magicInputs, [key]: value };
-    // Functional update so it composes with the demo-abort field restore
-    // queued by noteUserEdit in the same event.
+    // Draft update only (button-gated display): typing pre-fills the
+    // field but never commits a recalculation — the result card stays
+    // exactly as it was until Calculate Savings is clicked. Functional
+    // update so it composes with the demo-abort field restore queued by
+    // noteUserEdit in the same event.
     setMagicInputs((prev) => ({ ...prev, [key]: value }));
-
-    const isCore = CORE_KEYS.has(key);
-    const isNonCore = NON_CORE_KEYS.has(key);
-    // Original semantics: any input in the magic form recalculates,
-    // passing isPIOverride = isNonCore (true for the 5 non-core fields,
-    // false for the 5 core fields).
-    if (isCore || isNonCore) {
-      setSubmitted({
-        ...next,
-        __isPIOverride: isNonCore,
-        __modeAtCommit: extraMode,
-      });
-    }
-    // Keys not in either set are inert (none exist today).
   }
 
   function handleCalculate() {
@@ -265,13 +250,16 @@ export default function ExtraPaymentCalculator({ mainInputs, seedNonce, active }
     // demo. (Keeps the Step 10 early-return for an already-active mode.)
     stopOnInteraction();
     setExtraMode(mode);
-    // Original: every toggle click recalcs with the current field values
-    // (isPIOverride=false).
-    setSubmitted({
-      ...magicInputs,
-      __isPIOverride: false,
-      __modeAtCommit: mode,
-    });
+    // Button-gated display: a toggle refreshes a result that is already
+    // on screen with the new mode (original: every toggle recalc'd),
+    // but it must never reveal a blank result by itself.
+    if (submitted) {
+      setSubmitted({
+        ...magicInputs,
+        __isPIOverride: false,
+        __modeAtCommit: mode,
+      });
+    }
   }
 
   // ── Blur formatters (preserved from Step 8) ──

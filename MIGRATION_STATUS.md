@@ -675,6 +675,50 @@ push, merge, or deploy.
 
 ---
 
+# Post-Step 17 fix (2026-09-27): Magic tab — button-gated display
+
+**Owner-reported issue:** on the Extra Payment Magic tab, the interest
+saved / payoff values appeared on screen **without** clicking
+"Calculate Savings" — they showed up as soon as the user typed in a
+field or switched to the tab from the main calculator.
+
+**Root cause:** the original `script.js` recalculated (and rendered
+results) on every `input` event in the magic form, and the main → magic
+tab-sync also called `calculateMagic()` after copying the fields. The
+Step 10 React port preserved both behaviors, so any typing or tab
+switch revealed a live result.
+
+**Fix (deliberate deviation from the original, requested by the owner):**
+the result card now stays in its blank state until "Calculate Savings"
+is clicked, matching the main tab's click-to-calculate UX. In
+`src/components/ExtraPaymentCalculator.jsx`:
+
+- Typing in the 10 magic fields updates the draft state only — no
+  recalculation commit.
+- The main → magic tab-sync still prefills the magic fields (price,
+  down, balance, rate, term, tax, insurance) but no longer commits a
+  recalculation.
+- The Calculate Savings button commits exactly as before
+  (`isPIOverride=false`, calculated P&I auto-fills the field — the
+  original's button semantics, preserved).
+- The Monthly / One-time toggle recalcs only while a result is already
+  on screen (it refreshes with the new mode, as in the original, but
+  never reveals a blank result by itself).
+- The Step 12 intro demo still plays and shows its result (scripted
+  showcase, unchanged from the original).
+
+Calculation semantics, rounding, and `src/lib/extraMagic.js` are
+untouched. This supersedes the `BASELINE_CASES.md` note that "Magic tab
+recalculates on every `input`" for the React app (that note describes
+the original `script.js`, which remains accurate as a historical
+record).
+
+**Verification:** `npm test` → 92/92 pass; `npm run build` → clean.
+Manual browser check of the four scenarios above still pending (no
+browser access in this environment).
+
+---
+
 # Overall Migration Status (updated on `claude-all`, 2026-09-27)
 
 | Step | Status |
