@@ -808,3 +808,25 @@ Font Awesome / Google Fonts CDNs are unchanged from the original
 
 **Verdict:** automated checks green; ready for final manual acceptance
 testing. Step 18 (publish) still requires explicit owner authorization.
+
+---
+
+# Post-review fix (2026-09-27): invisible payment donut segments
+
+**Owner-reported issue:** in the Calculator tab the donut segments were
+not visible — hover/tooltip still worked, but the arcs had no color.
+
+**Root cause:** the original loaded the full Chart.js CDN build, whose
+auto-registered built-in `colors` plugin applied the default palette to
+datasets without explicit colors. The Step 11 tree-shaken ESM imports
+register only `ArcElement, Tooltip, Legend, DoughnutController` — not
+the `colors` plugin — so the arcs fell back to the global default fill
+`rgba(0,0,0,0.1)` (verified against chart.js 4.5.1), which is invisible
+on the dark theme.
+
+**Fix:** `src/components/PaymentChart.jsx` now states the dataset
+`backgroundColor` explicitly with the first four entries of Chart.js
+v4's default palette, in the order the original CDN build painted:
+P&I `#36a2eb`, Taxes `#ff6384`, Insurance `#ff9f40`, HOA `#ffcd56`.
+No other chart behavior changed. `npm test` 92/92; `npm run build`
+clean.

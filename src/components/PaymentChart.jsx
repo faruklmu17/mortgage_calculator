@@ -9,8 +9,11 @@
 //   - legend: bottom, point-style markers, #94a3b8, 12px, padding 20
 //   - tooltip: "<label>: $X" (formatCurrency, 0 decimals)
 //   - responsive + maintainAspectRatio: false (fills .chart-container)
-//   - NO explicit segment colors — the original relied on Chart.js'
-//     default palette, so none are added here either.
+//   - Segment colors: the original relied on Chart.js' default palette,
+//     which its full CDN build applied via the auto-registered `colors`
+//     plugin. The tree-shaken imports here do not register that plugin,
+//     so the same palette is stated explicitly on the dataset (see the
+//     backgroundColor comment) to reproduce the original appearance.
 //
 // react-chartjs-2 owns the chart lifecycle (creates on mount, updates in
 // place on data change, destroys on unmount), which satisfies AGENTS.md
@@ -73,6 +76,14 @@ export default function PaymentChart({ pi, tax, insurance, hoa }) {
         data: [pi, tax, insurance, hoa],
         borderWidth: 0,
         hoverOffset: 4,
+        // Explicit segment colors: the original loaded the full Chart.js
+        // CDN build, whose auto-registered `colors` plugin painted the
+        // default palette. The tree-shaken imports used here do NOT
+        // register that plugin, so without these the arcs fall back to
+        // the global default fill (rgba(0,0,0,0.1)) — invisible on this
+        // dark theme. These are the first four entries of Chart.js v4's
+        // default palette, i.e. exactly what the original build painted.
+        backgroundColor: ['#36a2eb', '#ff6384', '#ff9f40', '#ffcd56'],
       },
     ],
   };
