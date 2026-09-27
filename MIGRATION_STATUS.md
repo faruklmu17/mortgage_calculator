@@ -503,20 +503,87 @@ the built HTML. No push, merge, or deploy.
 
 ---
 
-# Overall Migration Status (end of step 10 session)
+# Step 14 Detail
+
+## Step 14: Verify the production build — ✅ COMPLETE (automated); browser items PENDING
+
+Ran the full plan checklist. Automated checks below; items requiring a
+real browser are labeled (no browser access in this environment).
+
+### Commands
+
+| Command | Result |
+|---------|--------|
+| `npm test` | **PASS** — 3 files, 92/92 |
+| `npm run build` | **PASS** — 31 modules; no warnings; `dist/` contains index.html + assets + all public files |
+| `npm run preview` | **PASS** — every production URL serves 200 (see table) |
+
+### Calculations
+
+- [x] Main calculator matches baseline cases — A1 exact in tests ($2,023 P&I / $408,142 interest / $2,581 PITI); B4/B5/B6/B7 exact in tests (23y 5m / 27y 5m / 11y 10m+10y 4m / matching sims; savings $105,429 / $53,943 / $12,228 / $0).
+- [x] Zero-interest behavior (F1: 0% valid, $0 interest, P&I = principal/months) and zero-principal blocked by validation (down ≥ price) — tested.
+- [x] Monthly extra payments work — B4 tested.
+- [x] One-time payments work (month-1 timing) — B5 tested.
+- [x] Final payments do not overpay principal — `simulatePayoff` clamps `balance = 0` when `balance <= principalRepayment`; oversized-lump-sum test passes.
+- [x] Invalid scenarios → combined error message; non-amortizing and 600-month-limit → explicit non-success warnings — tested (`extraMagic.test.js`).
+
+### Interaction
+
+- [x] Blank fields / decimal entry — parse + validation paths tested; blank rate rejected, explicit 0 accepted.
+- [x] Down-payment $/% toggle conversion math — byte-identical to original (`Math.round(price*(v/100))` / `(v/price*100).toFixed(1)`).
+- [x] Tab synchronization — restored to original semantics (every nav-Extra click, when magic price empty; one-way).
+- [x] Demo stops when the user interacts — implemented (typing / toggle / calculate / tab switch / nav re-click).
+- [ ] **Browser:** blank-and-retype every field, paste, keyboard navigation, labels — PENDING (no browser).
+- [ ] **Browser:** demo click-through incl. typing during the demo and reduced-motion — PENDING.
+
+### Layout
+
+- [ ] **Browser:** desktop/mobile parity, no horizontal overflow, chart resize — PENDING (no browser).
+
+### Production files
+
+- [x] `/privacy.html` opens directly and is styled (self-contained inline CSS; 200).
+- [x] `robots.txt` and `sitemap.xml` present (200).
+- [x] Verification file present (200).
+- [x] Social preview image loads (`/preview.png` 200; absolute social URLs in built HTML).
+- [x] `CNAME` contains `mortgagepayofflab.com`.
+- [x] Static educational content present in built HTML (`#guide`, `#extra-magic-guide`, `#tips`, both JSON-LD blocks, canonical/OG/Twitter).
+
+### Runtime
+
+- [x] No missing asset requests — index/JS/CSS and all public files 200 via `vite preview`.
+- [x] Calculator interactions do not transmit mortgage inputs — **zero** `fetch`/`XMLHttpRequest`/`sendBeacon`/`Worker` calls in `src/` (grep = 0); no analytics or third-party scripts.
+- [x] No duplicate HTML IDs in the built page; `script.js` not loaded (grep = 0).
+- [ ] **Browser:** console-error sweep — PENDING (no browser).
+
+### Remaining release blockers
+
+None found by automated checks. Browser-verification items above are the
+only outstanding checklist rows; the migration should **not** be described
+as fully verified until a human clicks through them.
+
+---
+
+# Overall Migration Status (updated on `claude-all`, 2026-09-27)
 
 | Step | Status |
 |------|--------|
 | 1 — Repo setup | ✅ (recorded in `MIGRATION_PLAN.md`) |
-| 2 — Branch | ✅ (repo is on `watson`) |
+| 2 — Branch | ✅ (work now on `claude-all`, based on the Step 10 baseline) |
 | 3 — Audit | ✅ |
 | 4 — Baseline capture | ✅ (browser cells PENDING — no browser access) |
 | 5 — `AGENTS.md` | ✅ |
 | 6 — Node/Vite setup | ✅ |
 | 7 — Extract & test calculation modules | ✅ |
-| 8 — React-ify the calculator area | ✅ |
+| 8 — React-ify the calculator area | ✅ (parity fixes applied in the Steps 1–10 audit) |
 | 9 — Interactive parity (main calculator) | ✅ |
 | 10 — Convert Extra Payment Magic tab | ✅ |
-| 11 — Integrate the chart | ⏳ **NEXT** |
-| 12–16 | ⏳ |
+| 11 — Integrate the chart | ✅ (chart.js + react-chartjs-2; CDN removed) |
+| 12 — Reintroduce animations and the demo | ✅ (typewriter + magic demo; browser checks PENDING) |
+| 13 — Preserve static files, privacy, and SEO | ✅ |
+| 14 — Verify the production build | ✅ automated; browser checklist items PENDING |
+| 15 — Update GitHub Actions | ⏳ **NEXT** |
+| 16 — Remove obsolete code and update documentation | ⏳ |
+| 17 — Review and commit | ✅ (each step committed as it completes) |
+| 18 — Publish | ⛔ requires explicit user authorization (not performed) |
 
