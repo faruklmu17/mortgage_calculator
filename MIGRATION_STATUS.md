@@ -460,6 +460,49 @@ enabled; every timer is tracked and cleaned up. No push, merge, or deploy.
 
 ---
 
+# Step 13 Detail
+
+## Step 13: Preserve static files, privacy, and SEO — ✅ COMPLETE
+
+**Scope honored:** Every public URL from the original site survives the
+Vite build at the same path. `index.html` remains the single Vite entry
+root (no `public/index.html`). Metadata and educational content stay in
+the built HTML. No push, merge, or deploy.
+
+### Files changed / moved
+
+| File | Change |
+|------|--------|
+| `public/CNAME`, `public/robots.txt`, `public/sitemap.xml`, `public/preview.png`, `public/googleb4f539193a03794c.html`, `public/privacy.html` | **Moved** (git mv) into `public/` so Vite copies them to the dist root — the URLs `/`, `/privacy.html`, `/robots.txt`, `/sitemap.xml`, `/preview.png`, `/CNAME`, and the verification file are all unchanged. |
+| `public/privacy.html` | Self-contained page (inline CSS + own Google Fonts `@import`, no `style.css` dependency), so it ships verbatim from `public/`. Fixes: **branding** "Mortgage Pro" → "Mortgage Payoff Lab" (title, body, footer — audit discrepancy #10); **Font Awesome link added** so the back-arrow icon renders (audit bug #2 — it was never loaded on this page); **honest disclosures** added: CDN font/icon requests (no calculator data in them, no cookies/tracking) and the single sessionStorage demo flag (audit: previously unmentioned). |
+| `index.html` | `og:image` and `twitter:image` changed from relative `preview.png` to absolute `https://mortgagepayofflab.com/preview.png` (audit bug #10; Vite only rewrote `og:image`, leaving `twitter:image` broken in the build). FAQ answer scoped from "no data is ever transmitted" to "no **financial data you enter** is ever transmitted…" and JSON-LD feature "No data storage or transmission" → "financial data stays in your browser" — per the plan: distinguish *inputs processed locally* from *no network requests at all* (CDN resources exist). |
+
+### Verification
+
+| Check | Method | Result |
+|-------|--------|--------|
+| Build | `npm run build` | **PASS** — 31 modules (privacy page untouched by the bundler); no warnings |
+| Public files in dist root | `ls dist/` | **PASS** — CNAME, preview.png, privacy.html, robots.txt, sitemap.xml, verification file all present at root |
+| Every public URL serves | `vite preview` + curl | **PASS** — 200 for `/`, `/index.html`, `/privacy.html`, `/robots.txt`, `/sitemap.xml`, `/CNAME`, `/preview.png`, verification file |
+| Social image URLs absolute in build | grep of dist/index.html | **PASS** — og:image + twitter:image both `https://mortgagepayofflab.com/preview.png` |
+| SEO metadata intact | dist/index.html | **PASS** — title, description, canonical, OG, Twitter, both JSON-LD blocks, `#guide`/`#extra-magic-guide`/`#tips` all present |
+| PITI terminology | grep | **PASS** — PITI = P/I/T/I everywhere; HOA always described as additional |
+| Preview no longer double-copied | dist/assets | **PASS** — no hashed `preview-*.png` asset; single copy at `/preview.png` |
+
+### Manual browser check (not yet performed — no browser access)
+
+- [ ] `/privacy.html` opens directly, styled, back arrow renders, back
+      link returns to the calculator.
+- [ ] Social card previews resolve the absolute image URL.
+
+### Notes
+
+- `preview.png` remains a 1024×1024 JPEG with a `.png` extension (audit
+  bug #11 / decision F8) — regenerating the image is an asset decision,
+  out of scope; URLs and references are correct either way.
+
+---
+
 # Overall Migration Status (end of step 10 session)
 
 | Step | Status |
