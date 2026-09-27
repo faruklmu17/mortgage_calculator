@@ -638,6 +638,43 @@ push, merge, or deploy.
 
 ---
 
+# Step 17 Detail
+
+## Step 17: Review and commit — ✅ COMPLETE
+
+### Commits on `claude-all` (on top of the Step 10 baseline `b7655fa`)
+
+| Commit | Step |
+|--------|------|
+| `0d151b6` | Audit of Steps 1–10: sync-latch fix, blur-formatting restore, margin fix, junk-file removal |
+| `4e07595` | Step 11: payment donut via chart.js + react-chartjs-2 (CDN removed) |
+| `bdad584` | Step 12: typewriter placeholder + magic intro demo |
+| `94780e2` | Step 13: static assets in `public/`, SEO + privacy wording audit |
+| `685a59b` | Step 14: production build verification (automated checks) |
+| `061a9e8` | Step 15: GitHub Actions builds and deploys `dist/` |
+| `161fe42` | Step 16: remove legacy `script.js`, rewrite README |
+| (this) | Step 17: full-diff review record |
+
+### Review
+
+- `git diff b7655fa..HEAD --stat` — 23 files, +1091/−898. Every changed
+  file inspected in the full diff; no unintended changes found.
+- Working tree clean; branch `claude-all`; no other branches touched; no
+  force-push, no history rewrite, nothing pushed.
+- Final validation on the review state:
+  - `npm test` → **92/92 pass**
+  - `npm run build` → **clean** (no warnings)
+  - `npm run preview` → `/`, `/index.html`, `/privacy.html` all 200
+- `dist/` remains gitignored (build output never committed).
+
+### Not done (by design)
+
+- **Step 18 (publish)** requires an explicit user request: pushing the
+  branch, opening a PR against `v1`, and merging to deploy. Nothing has
+  been pushed.
+
+---
+
 # Overall Migration Status (updated on `claude-all`, 2026-09-27)
 
 | Step | Status |
