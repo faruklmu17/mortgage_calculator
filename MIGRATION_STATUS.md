@@ -398,6 +398,68 @@ No push, merge, or deploy.
 
 ---
 
+# Step 12 Detail
+
+## Step 12: Reintroduce animations and the demo — ✅ COMPLETE
+
+**Scope honored:** The two live animations from the original are back: the
+**typewriter placeholder** on the main Home Price input and the **Extra
+Payment Magic intro demo** (typewriter demo on first visit to the tab).
+The main-calculator auto-fill demo (`runDemoOnce`) remains unported — it
+was **commented out in the original** (`// runDemoOnce();`), so it was not
+part of existing behavior (Step 8 note #3 stands). `StrictMode` is left
+enabled; every timer is tracked and cleaned up. No push, merge, or deploy.
+
+### Files changed / created
+
+| File | Change |
+|------|--------|
+| `src/hooks/useTypewriterPlaceholder.js` | **Created.** Faithful port of `script.js#initTypewriter` as a React state machine driving the `placeholder` prop: same text ("Enter your home price here..."), same 100ms/50ms/3s/0.5s cadence and stop-while-filled-or-focused behavior (re-check every 1s, charIndex preserved). **Added per plan:** `prefers-reduced-motion: reduce` → static full text (live via media-query listener); timer cleared on unmount; StrictMode-safe. |
+| `src/hooks/useMagicDemo.js` | **Created.** Port of `script.js#runMagicDemo`: same `mpl_magic_demo_v4` sessionStorage key (set on finish, once per session), same six values/order (600,000 → 450,000 → 120,000 → 6.5 → 30 → 500), same 40ms/char + 200ms field-gap cadence with a recalculation every 3rd character and at each field's completion (including the original's empty first tick), same finish sequence (flag → 500ms glow scale(1.02) → ease back → after 2s clear the six fields **without** recalculating so results stay visible). **Added per plan:** aborts on any user interaction (typing in a magic field, mode toggle, Calculate Savings, tab switch, nav re-click) restoring partially typed fields except user-edited ones; **never starts over user-entered values** (requires all six demo fields blank — the original only checked price and would wipe the other five); `prefers-reduced-motion` → skipped entirely, flag deliberately NOT set; every timer cleared on abort/unmount. |
+| `src/components/PaymentCalculator.jsx` | Price input now uses `useTypewriterPlaceholder(inputs.price)` instead of an empty placeholder. |
+| `src/components/ExtraPaymentCalculator.jsx` | Demo wired in: `useMagicDemo` (draft setter, commit → `submitted`, `active` prop); the nav-Extra effect now aborts an in-flight demo before the sync check and calls `startIfEligible` after it (original: "always check if demo should run if fields are still empty" — after sync); `updateMagicInput`/`handleCalculate`/`selectExtraMode` call `noteUserEdit`/`stopOnInteraction`; draft updates made functional so they compose with demo-abort field restore in the same event; results card carries the demo glow (`transition: all 0.5s ease`, `scale(1.02)`, mirroring the original inline-style pulse). |
+| `src/App.jsx` | Passes `active={activeTab === 'magic'}` so the demo stops when the tab is hidden. |
+
+### Verification
+
+| Check | Method | Result |
+|-------|--------|--------|
+| Unit suite | `npm test` | **PASS** — 92/92 (unchanged; animations are UI-only) |
+| Production build | `npm run build` | **PASS** — JS 405.72 kB; no warnings |
+| Demo/typewriter in bundle | grep of built JS | **PASS** — `mpl_magic_demo_v4`, typewriter text, `prefers-reduced-motion`, demo values all present |
+| No StrictMode changes | `src/main.jsx` | **PASS** — `<StrictMode>` intact |
+| Timer cleanup | Read `useMagicDemo.js` / `useTypewriterPlaceholder.js` | **PASS** — every `setTimeout` tracked; cleared on abort, tab switch, unmount, media change |
+
+### Manual browser check (not yet performed — no browser access)
+
+- [ ] Fresh session, magic tab: demo types the six values, recalcs as it
+      types, P&I auto-fills, glow pulses, fields clear after ~2s, results
+      stay; `mpl_magic_demo_v4` set in sessionStorage.
+- [ ] Reload same session: no demo (flag set).
+- [ ] Typing any character during the demo stops it immediately; user text
+      kept, other partially typed fields cleared.
+- [ ] Toggle Monthly/One-time or click Calculate Savings mid-demo: stops.
+- [ ] Switch tabs mid-demo: stops, fields restored.
+- [ ] Main tab: placeholder types/deletes "Enter your home price here...";
+      stops to full text while the price field is focused or filled,
+      resumes after.
+- [ ] OS "reduce motion" on: no typewriter animation (static text), no demo.
+
+### Deviations from the original (per plan requirements, documented)
+
+- Demo now **starts only when all six demo fields are blank** (original
+  checked price only and wiped the other five).
+- Demo now **stops on user interaction / tab switch** (original ran to
+  completion regardless).
+- `prefers-reduced-motion` skips the demo and typewriter animation (new).
+- Demo recalcs commit `isPIOverride=false` for every character, exactly
+  like the original's bare `calculateMagic()` calls — so a manual P&I is
+  auto-filled over during the demo, as in the original.
+- Main-calculator auto-fill demo (`runDemoOnce`, `mpl_demo_seen`) stays
+  unported: it was disabled (commented out) in the original.
+
+---
+
 # Overall Migration Status (end of step 10 session)
 
 | Step | Status |

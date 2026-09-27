@@ -99,7 +99,11 @@ export default function CalculatorApp() {
         className="calculator-wrapper"
         style={{ display: activeTab === 'magic' ? 'grid' : 'none' }}
       >
-        <ExtraPaymentCalculator mainInputs={mainInputs} seedNonce={seedNonce} />
+        <ExtraPaymentCalculator
+          mainInputs={mainInputs}
+          seedNonce={seedNonce}
+          active={activeTab === 'magic'}
+        />
       </main>
     </>
   );

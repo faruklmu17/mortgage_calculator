@@ -55,6 +55,7 @@ import {
 import { calculateMortgage } from '../lib/mortgage.js';
 import { formatCurrency } from '../lib/formatting.js';
 import PaymentChart from './PaymentChart.jsx';
+import { useTypewriterPlaceholder } from '../hooks/useTypewriterPlaceholder.js';
 
 const BLANK_RESULT = {
   paymentAmount: '$0',
@@ -169,6 +170,9 @@ export default function PaymentCalculator({
   // toggle click, or `null` before the first one. Never holds formatted
   // or derived values.
   const [submitted, setSubmitted] = useState(null);
+  // Step 12: the animated "Enter your home price here..." placeholder
+  // (original initTypewriter), driven by state — never touches the value.
+  const pricePlaceholder = useTypewriterPlaceholder(inputs.price);
 
   // Derived on every render — never stored (Step 9 requirement).
   const result = deriveResult(submitted);
@@ -232,7 +236,7 @@ export default function PaymentCalculator({
             <input
               type="text"
               id="price"
-              placeholder=""
+              placeholder={pricePlaceholder}
               aria-label="Home Purchase Price"
               value={inputs.price}
               ref={priceInputRef}

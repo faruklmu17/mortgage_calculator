@@ -54,6 +54,7 @@ import { parseNumeric } from '../lib/validation.js';
 import {
   deriveExtraPaymentResult,
 } from '../lib/extraMagic.js';
+import { useMagicDemo } from '../hooks/useMagicDemo.js';
 
 const CORE_KEYS = new Set([
   'magicPrice',
@@ -93,7 +94,7 @@ function fieldOnly(submitted) {
   return out;
 }
 
-export default function ExtraPaymentCalculator({ mainInputs, seedNonce }) {
+export default function ExtraPaymentCalculator({ mainInputs, seedNonce, active }) {
   // Draft strings for the 10 magic-tab fields. Always user-editable.
   const [magicInputs, setMagicInputs] = useState({
     magicPrice: '',
@@ -115,6 +116,21 @@ export default function ExtraPaymentCalculator({ mainInputs, seedNonce }) {
   // before the first such action.
   const [submitted, setSubmitted] = useState(null);
   const piFieldRef = useRef(null);
+  // The demo's recalc commits happen on timers, so they read the mode
+  // through a ref to always see the current value.
+  const extraModeRef = useRef(extraMode);
+  extraModeRef.current = extraMode;
+
+  // ── Step 12: the intro demo (original runMagicDemo, ported) ──
+  function commitDemo(snapshot, isPIOverride) {
+    setSubmitted({
+      ...snapshot,
+      __isPIOverride: isPIOverride,
+      __modeAtCommit: extraModeRef.current,
+    });
+  }
+  const { startIfEligible, stopOnInteraction, noteUserEdit, demoGlow } =
+    useMagicDemo({ setDraft: setMagicInputs, commit: commitDemo, active });
 
   // Derived on every render — never stored (AGENTS.md / Step 9 pattern).
   // The `__isPIOverride` flag is what was in effect at the moment the
@@ -158,44 +174,63 @@ export default function ExtraPaymentCalculator({ mainInputs, seedNonce }) {
   useEffect(() => {
     if (!seedNonce || seedNonce <= 0) return;
 
-    const mainPrice = parseNumeric(mainInputs.price);
-    if (mainPrice <= 0) return;
-    if (parseNumeric(magicInputs.magicPrice) > 0) return;
+    // A new nav-Extra click is user interaction: abort any in-flight demo
+    // first (restoring its partially typed fields), as in the plan's
+    // "Stop the demo when the user begins interacting."
+    stopOnInteraction();
 
-    const down = parseNumeric(mainInputs.downPayment);
-    const principal = mainPrice - down;
-    const synced = {
-      ...magicInputs,
-      magicPrice: mainInputs.price,
-      magicDownPayment: mainInputs.downPayment,
-      // Original copied `principal.toLocaleString('en-US')` unconditionally
-      // (a non-positive principal still lands in the field and then fails
-      // magic validation exactly as it did in the vanilla version).
-      magicBalance: principal.toLocaleString('en-US'),
-      magicRate: mainInputs.rate,
-      magicTermText: String(mainInputs.term || ''),
-      magicTermSelect: String(mainInputs.term || '30'),
-      magicTax: mainInputs.tax,
-      magicInsurance: mainInputs.insurance,
-      extraAmount: '',
-      magicMonthlyPI: '',
-    };
-    setMagicInputs(synced);
-    // Commit the synced snapshot with a core trigger (isPIOverride=false)
-    // so the PI auto-fills per the original behavior.
-    setSubmitted({
-      ...synced,
-      __isPIOverride: false,
-      __modeAtCommit: extraMode,
-    });
+    const mainPrice = parseNumeric(mainInputs.price);
+    let effective = magicInputs;
+    if (mainPrice > 0 && parseNumeric(magicInputs.magicPrice) <= 0) {
+      const down = parseNumeric(mainInputs.downPayment);
+      const principal = mainPrice - down;
+      const synced = {
+        ...magicInputs,
+        magicPrice: mainInputs.price,
+        magicDownPayment: mainInputs.downPayment,
+        // Original copied `principal.toLocaleString('en-US')`
+        // unconditionally (a non-positive principal still lands in the
+        // field and then fails magic validation exactly as it did in the
+        // vanilla version).
+        magicBalance: principal.toLocaleString('en-US'),
+        magicRate: mainInputs.rate,
+        magicTermText: String(mainInputs.term || ''),
+        magicTermSelect: String(mainInputs.term || '30'),
+        magicTax: mainInputs.tax,
+        magicInsurance: mainInputs.insurance,
+        extraAmount: '',
+        magicMonthlyPI: '',
+      };
+      setMagicInputs(synced);
+      // Commit the synced snapshot with a core trigger (isPIOverride=false)
+      // so the PI auto-fills per the original behavior.
+      setSubmitted({
+        ...synced,
+        __isPIOverride: false,
+        __modeAtCommit: extraModeRef.current,
+      });
+      effective = synced;
+    }
+
+    // The original then asked "should the demo run if the fields are still
+    // empty?" — after the sync (so a just-synced price suppresses it).
+    // Ours additionally requires all six demo fields blank, the session
+    // flag unset, and motion allowed (see useMagicDemo).
+    startIfEligible(effective);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seedNonce]);
 
   // ── Field handlers ──
 
   function updateMagicInput(key, value) {
+    // Step 12: typing is user interaction — if the intro demo is running,
+    // abort it now and keep the user's text in this field.
+    noteUserEdit(key);
+
     const next = { ...magicInputs, [key]: value };
-    setMagicInputs(next);
+    // Functional update so it composes with the demo-abort field restore
+    // queued by noteUserEdit in the same event.
+    setMagicInputs((prev) => ({ ...prev, [key]: value }));
 
     const isCore = CORE_KEYS.has(key);
     const isNonCore = NON_CORE_KEYS.has(key);
@@ -213,6 +248,8 @@ export default function ExtraPaymentCalculator({ mainInputs, seedNonce }) {
   }
 
   function handleCalculate() {
+    // Step 12: calculating is user interaction — aborts a running demo.
+    stopOnInteraction();
     // Original: Calculate-Savings recalcs with isPIOverride=false
     // (PI auto-fills) using the current field values.
     setSubmitted({
@@ -224,6 +261,9 @@ export default function ExtraPaymentCalculator({ mainInputs, seedNonce }) {
 
   function selectExtraMode(mode) {
     if (mode === extraMode) return;
+    // Step 12: toggling the mode is user interaction — aborts a running
+    // demo. (Keeps the Step 10 early-return for an already-active mode.)
+    stopOnInteraction();
     setExtraMode(mode);
     // Original: every toggle click recalcs with the current field values
     // (isPIOverride=false).
@@ -508,7 +548,17 @@ export default function ExtraPaymentCalculator({ mainInputs, seedNonce }) {
         </div>
       </article>
 
-      <aside className="results-card">
+      {/* Step 12: the demo-completion glow — the original applied
+          `transition: all .5s; transform: scale(1.02)` inline to this
+          node, then eased it back to scale(1). The transition stays on
+          the card (as in the original) so the ease-back animates. */}
+      <aside
+        className="results-card"
+        style={{
+          transition: 'all 0.5s ease',
+          transform: demoGlow ? 'scale(1.02)' : 'scale(1)',
+        }}
+      >
         <div
           className="calc-card"
           style={{
