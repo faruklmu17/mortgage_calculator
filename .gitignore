@@ -20,3 +20,7 @@ build/
 # Logs
 npm-debug.log*
 
+# Playwright browser-verification leftovers
+.pw-browsers/
+.pw-tmp/
+

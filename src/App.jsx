@@ -32,18 +32,30 @@ export default function CalculatorApp() {
   const [seedNonce, setSeedNonce] = useState(0);
   const [mainInputs, setMainInputs] = useState(INITIAL_MAIN_INPUTS);
   const priceInputRef = useRef(null);
+  // Set when "Get Started" is clicked while the magic tab is active: the
+  // focus has to wait for the re-render that makes the calculator tab
+  // visible, because focus() on a display:none element is a silent no-op.
+  const pendingPriceFocusRef = useRef(false);
 
   function handleMainInputChange(key, value) {
     setMainInputs((prev) => ({ ...prev, [key]: value }));
   }
 
-  function handleFocusMain() {
-    if (activeTab !== 'calculator') setActiveTab('calculator');
+  function focusPriceField() {
     const el = priceInputRef.current;
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       el.focus({ preventScroll: true });
     }
+  }
+
+  function handleFocusMain() {
+    if (activeTab !== 'calculator') {
+      pendingPriceFocusRef.current = true;
+      setActiveTab('calculator');
+      return;
+    }
+    focusPriceField();
   }
 
   function handleSwitchTab(tab) {
@@ -64,6 +76,15 @@ export default function CalculatorApp() {
       window.removeEventListener(EVENTS.SWITCH_TAB, onSwitch);
       window.removeEventListener(EVENTS.FOCUS_MAIN, onFocus);
     };
+  }, [activeTab]);
+
+  // After the tab-switch re-render, land the deferred focus on the price
+  // field now that its container is visible again.
+  useEffect(() => {
+    if (activeTab === 'calculator' && pendingPriceFocusRef.current) {
+      pendingPriceFocusRef.current = false;
+      focusPriceField();
+    }
   }, [activeTab]);
 
   useEffect(() => {

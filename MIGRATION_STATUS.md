@@ -742,3 +742,69 @@ browser access in this environment).
 | 17 — Review and commit | ✅ (each step committed; full diff reviewed below) |
 | 18 — Publish | ⛔ requires explicit user authorization (not performed) |
 
+
+---
+
+# Final code-level review (claude-all, 2026-09-27)
+
+Full-repo review pass after the browser verification was accepted: re-ran
+the automated suite, audited every source file against the removed
+`script.js` (from git history) for behavior parity, and swept for legacy
+leftovers, dead code, broken imports, missing cleanup, and hard-coded
+paths.
+
+**Commands:** `npm test` → 92/92 pass. `npm run build` → clean, no
+warnings; `dist/` contains the hashed bundle plus all `public/` files
+(CNAME, privacy.html, sitemap, robots, verification, preview.png).
+
+**Issues found and fixed (this pass):**
+
+1. **"Get Started" focus lost across tab switch (`src/App.jsx`).**
+   Clicking Get Started from the magic tab called `setActiveTab` and then
+   `focus()`/`scrollIntoView()` synchronously, while `#calculator` was
+   still `display: none`; browsers drop `focus()` on non-rendered
+   elements, so the price field was never focused. The focus is now
+   deferred through a `pendingPriceFocusRef` flag and an effect that runs
+   after the tab-switch re-render makes the field visible. Same-tab
+   behavior unchanged. (The original vanilla handler had the same silent
+   no-op on this path; the port's tab-switch made the fix reachable.)
+2. **Stale `mortgage_calculator` gitlink removed.** The index carried a
+   mode-160000 submodule reference (commit `b522ade`, absent from this
+   repo) with no `.gitmodules` entry; `git submodule status` failed on it.
+   It was a baseline leftover (pre-Step-11), pointing at nothing — removed
+   from the index and the empty on-disk directory deleted.
+3. **Tooling scratch ignored.** `.pw-browsers/` and `.pw-tmp/`
+   (Playwright leftovers, ~630 MB) added to `.gitignore`; one-off
+   `.spacecheck` scratch file deleted.
+
+**Checked and confirmed clean:** no legacy JS/HTML remains (the only
+tracked-tree delta vs the legacy baseline is the Step-16 removal of
+`script.js`); no broken imports (build resolves all); no unused
+dependencies or untested exports (all `src/lib` exports are used by the
+app or the suite); no skipped tests; all timers (typewriter, magic demo),
+window listeners, and the chart (react-chartjs-2 lifecycle) have cleanup;
+both calculator tabs stay mounted so input state persists across tab
+switches as in the original; every `getElementById` target exists in
+`index.html`; no `class=` / controlled-input / duplicate-id React warning
+sources; production-domain strings are intentional (CNAME match) and the
+Font Awesome / Google Fonts CDNs are unchanged from the original
+(environment-specific on Bouchet only).
+
+**Remaining concerns (non-blocking):**
+
+- Intro-demo race: clicking Calculate Savings or the Monthly/One-time
+  toggle *while the once-per-session demo is still typing* commits the
+  demo's partially typed values, then the abort restores the fields to
+  blank — a result can be shown with an empty form for that one session.
+  It degenerates to the demo's own intended finale (results linger,
+  fields cleared); left as-is to avoid a late refactor of the
+  abort/commit ordering.
+- `deriveExtraPaymentResult` receives the live `extraMode` rather than
+  the snapshot's `__modeAtCommit`; the two always agree (every mode
+  change re-commits), so there is no behavioral difference.
+- Icon/font CDN dependency (Font Awesome, Google Fonts) is inherited from
+  the original; on Bouchet the CDN ERR_EMPTY_RESPONSE leaves icons/
+  fallback fonts only — cosmetic, per owner direction.
+
+**Verdict:** automated checks green; ready for final manual acceptance
+testing. Step 18 (publish) still requires explicit owner authorization.
