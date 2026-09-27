@@ -278,6 +278,79 @@ The audit is complete, saved to `MIGRATION_AUDIT.md`, and verified against the a
 
 ---
 
+# Steps 1–10 Audit (claude-all takeover, 2026-09-27)
+
+Full re-verification of the Qwen baseline (`b7655fa`, branch `claude-all`).
+
+## Validation re-run
+
+| Check | Command | Result |
+|-------|---------|--------|
+| Unit suite | `npm ci && npm test` | **PASS** — 3 files, 92/92 (mortgage 46, amortization 22, extraMagic 24) |
+| Production build | `npm run build` | **PASS** — 24 modules; no warnings |
+| Node/Vite engine | node v22.23.2 vs Vite 8.3.0 engines `^20.19.0 \|\| >=22.12.0` | **PASS** |
+
+## Issues found in Steps 1–10 — FIXED on claude-all
+
+1. **Tab-sync latch regression** (`App.jsx`, `ExtraPaymentCalculator.jsx`).
+   The Step 8/10 sync used a one-shot `didSync` latch that was consumed even
+   when its preconditions failed (e.g. first switch with an empty main
+   price), and it blocked re-syncs the original performs on *every* nav-Extra
+   click while the magic price is empty (baseline C10a / preserve list §E.5:
+   "only on tab switch, only when Magic price is empty" — repeatable). Same-tab
+   nav clicks also skipped the check entirely. **Fix:** latch removed; each
+   `seedNonce` bump (now emitted on *every* nav-Extra click, matching the
+   original handler) re-checks preconditions and syncs when they hold;
+   `magicBalance` is copied unconditionally (`principal.toLocaleString`)
+   exactly as `script.js#navExtra` does.
+2. **Lost on-blur formatting** on the magic tab's `extraAmount` and
+   `magicMonthlyPI` fields (original formatted all 7 magic fields on blur).
+   **Fix:** `onBlur={blurNumeric(...)}` restored on both inputs.
+3. **Layout regression:** the magic `<main>` got an inline
+   `margin-top: 0` override while active, clobbering the CSS
+   `.calculator-wrapper { margin-top: 40px }` the original always kept.
+   **Fix:** override removed.
+4. **Qwen tool-test junk committed in Steps 3/8:**
+   `Users/Watson/Documents/workspace/superinterface/src/components/ui/sheet.tsx`
+   (an unrelated file copied during an editing tool test) and
+   `qwen-tool-test.txt` ("Qwen existing-file editing succeeded."). No
+   references from any project file. **Fix:** `git rm` (recoverable from git
+   history if ever needed).
+5. **Stray `y` line** at the end of `.gitignore` (leftover of an
+   `npm … -y` typo). **Fix:** removed.
+
+## Intentional deviations from the original (kept, documented — not silent)
+
+- **Main-calculator validation error display:** React resets *all* result
+  cards to $0 and clears the donut on a validation error; the original reset
+  only the big PITI number and kept stale stat-card/chart values. Step 9's
+  own manual check already expected "all-$0 cards"; keeping stale data on
+  error is the confusing behavior, so the React behavior is kept.
+- **Extra-mode toggle, already-active mode:** React no-ops (original re-ran
+  `calculateMagic(false)`, which would auto-fill and clobber a manual
+  `magicMonthlyPI`). The down-payment toggle matches the original (early
+  return in both).
+- **Get Started while on the magic tab:** React switches to the calculator
+  tab first, then focuses the price input (original focused a hidden input =
+  no-op).
+- (Carried from Step 8/10 notes:) `magicTerm` id split into
+  `magicTermText`/`magicTermSelect` (bug fix, approved in Step 10); F1 (0%
+  valid); F7 (limit-reached / non-amortizing warnings); demos + typewriter
+  still not ported (Step 12); donut still on the Chart.js CDN (Step 11).
+
+## Known quirks preserved from the original (parity kept, no fix without a
+## user decision)
+
+- Main-tab down-payment in **percent mode** is copied verbatim into the
+  dollar-only `magicDownPayment` field on sync (original behavior).
+- Validation-error stale display on the *magic* tab does not exist (magic
+  recomputes on every keystroke), so the main-tab deviation above is the
+  only error-display divergence.
+- Non-functional hamburger (`.mobile-menu-btn`) at ≤768px — non-functional
+  in the original too (audit bug #3); left as-is.
+
+---
+
 # Overall Migration Status (end of step 10 session)
 
 | Step | Status |

@@ -48,8 +48,10 @@ export default function CalculatorApp() {
 
   function handleSwitchTab(tab) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    if (tab === activeTab) return;
     setActiveTab(tab);
+    // The original re-ran its sync check on EVERY navExtra click (even when
+    // already on the magic tab), so the seed must bump on every magic nav
+    // click, not only on actual tab changes.
     if (tab === 'magic') setSeedNonce((n) => n + 1);
   }
 
@@ -90,13 +92,12 @@ export default function CalculatorApp() {
         />
       </main>
 
+      {/* No inline margin override: the original never touched the wrapper's
+          CSS margin-top (40px) when switching tabs. */}
       <main
         id="extra-magic-section"
         className="calculator-wrapper"
-        style={{
-          display: activeTab === 'magic' ? 'grid' : 'none',
-          marginTop: activeTab === 'magic' ? 0 : undefined,
-        }}
+        style={{ display: activeTab === 'magic' ? 'grid' : 'none' }}
       >
         <ExtraPaymentCalculator mainInputs={mainInputs} seedNonce={seedNonce} />
       </main>

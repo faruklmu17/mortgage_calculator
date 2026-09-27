@@ -37,17 +37,17 @@
 //   #8 Raw input strings preserved while editing; same styling; NaN /
 //      Infinity never displayed.
 //
-// One-time main → magic sync (Step 8 note #2 / Step 10 req #2):
-//   - Fires **only once** per session (latched via `didSync`).
-//   - Fires **only when** main price > 0, magic price is empty, and
-//     `seedNonce > 0`.
+// Main → magic sync (Step 8 note #2 / Step 10 req #2):
+//   - Fires on **every** nav-Extra click (each `seedNonce` bump), not just
+//     once — matching the original, which re-checked on every click.
+//   - Fires **only when** main price > 0 and the magic price is empty
+//     (preserving the user's existing magic inputs otherwise).
 //   - On fire: copies the main tab's loan fields into the magic fields
 //     (price/down/rate/term/tax/insurance), sets `magicBalance` to
 //     `price - downPayment`, commits the synced snapshot as the new
 //     `submitted`, and triggers a recalculation.
-//   - If the magic price is NOT empty, the sync is skipped (preserving
-//     the user's existing magic inputs); the tab still shows the last
-//     committed result (or the BLANK state if none yet).
+//   - If the magic price is NOT empty, the sync is skipped; the tab still
+//     shows the last committed result (or the BLANK state if none yet).
 
 import { useEffect, useRef, useState } from 'react';
 import { parseNumeric } from '../lib/validation.js';
@@ -115,7 +115,6 @@ export default function ExtraPaymentCalculator({ mainInputs, seedNonce }) {
   // before the first such action.
   const [submitted, setSubmitted] = useState(null);
   const piFieldRef = useRef(null);
-  const didSync = useRef(false);
 
   // Derived on every render — never stored (AGENTS.md / Step 9 pattern).
   // The `__isPIOverride` flag is what was in effect at the moment the
@@ -148,11 +147,16 @@ export default function ExtraPaymentCalculator({ mainInputs, seedNonce }) {
     );
   }, [piAutoFill]);
 
-  // ── One-time main → magic sync (Step 8 note #2 / Step 10 req #2) ──
+  // ── Main → magic sync (Step 8 note #2 / Step 10 req #2) ──
+  // The original re-ran this check on EVERY navExtra click — including
+  // clicks while already on the magic tab — whenever the magic price field
+  // was empty and the main price had a value. It was NOT one-shot: a user
+  // who cleared the magic price (or whose demo fields were cleared by the
+  // Step 12 demo) could trigger a re-sync on the next nav-Extra click.
+  // So there is no latch here: each seedNonce bump re-checks the
+  // preconditions and syncs when they hold.
   useEffect(() => {
     if (!seedNonce || seedNonce <= 0) return;
-    if (didSync.current) return;
-    didSync.current = true;
 
     const mainPrice = parseNumeric(mainInputs.price);
     if (mainPrice <= 0) return;
@@ -164,7 +168,10 @@ export default function ExtraPaymentCalculator({ mainInputs, seedNonce }) {
       ...magicInputs,
       magicPrice: mainInputs.price,
       magicDownPayment: mainInputs.downPayment,
-      magicBalance: principal > 0 ? principal.toLocaleString('en-US') : '',
+      // Original copied `principal.toLocaleString('en-US')` unconditionally
+      // (a non-positive principal still lands in the field and then fails
+      // magic validation exactly as it did in the vanilla version).
+      magicBalance: principal.toLocaleString('en-US'),
       magicRate: mainInputs.rate,
       magicTermText: String(mainInputs.term || ''),
       magicTermSelect: String(mainInputs.term || '30'),
@@ -314,6 +321,7 @@ export default function ExtraPaymentCalculator({ mainInputs, seedNonce }) {
                 value={magicInputs.magicMonthlyPI}
                 ref={piFieldRef}
                 onChange={(e) => updateMagicInput('magicMonthlyPI', e.target.value)}
+                onBlur={blurNumeric('magicMonthlyPI')}
               />
             </div>
           </div>
@@ -474,6 +482,7 @@ export default function ExtraPaymentCalculator({ mainInputs, seedNonce }) {
                 aria-label="Extra Payment Amount"
                 value={magicInputs.extraAmount}
                 onChange={(e) => updateMagicInput('extraAmount', e.target.value)}
+                onBlur={blurNumeric('extraAmount')}
               />
             </div>
           </div>
