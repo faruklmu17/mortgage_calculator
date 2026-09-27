@@ -564,6 +564,42 @@ as fully verified until a human clicks through them.
 
 ---
 
+# Step 15 Detail
+
+## Step 15: Update GitHub Actions — ✅ COMPLETE (local; not pushed)
+
+**Scope honored:** The workflow now builds with Vite and publishes only
+`dist/`. Deployment stays restricted to the production branch `v1` for
+**all** trigger types, including manual runs. No push, merge, or deploy was
+performed — the file changes take effect only when a branch containing
+them is pushed (Step 18, pending user authorization).
+
+### Files changed
+
+| File | Change |
+|------|--------|
+| `.github/workflows/deploy.yml` | Rewritten: `build` job (checkout → configure-pages → setup-node **22** with npm cache → `npm ci` → `npm test` → `npm run build` → `upload-pages-artifact` path **`dist`**) + `deploy` job (`deploy-pages@v4`, `github-pages` environment, `needs: build`). **New:** `pull_request` trigger on `v1` runs the same test/build validation but never uploads the artifact or deploys (`if: github.event_name != 'pull_request'` guards). **New:** `workflow_dispatch` restricted to `branches: ["v1"]` so a manual run from any other branch cannot publish. Preserved: `v1` push trigger, `contents: read / pages: write / id-token: write` permissions, `github-pages` environment, `pages` concurrency group with `cancel-in-progress: false`. |
+
+### Verification
+
+| Check | Method | Result |
+|-------|--------|--------|
+| YAML parses | `npx js-yaml` (structure dump) | **PASS** — valid; triggers `push`/`pull_request`/`workflow_dispatch` all `branches: ["v1"]` |
+| PR runs cannot deploy | guard on upload step + `if:` on deploy job | **PASS** — both skipped on `pull_request` |
+| Manual runs cannot publish from other branches | `workflow_dispatch.branches: ["v1"]` | **PASS** |
+| Only the built site is uploaded | `upload-pages-artifact` `path: dist` | **PASS** (old workflow uploaded the whole repo root, which is how `Users/…` junk reached the live site) |
+| Node version compatible | setup-node 22 vs Vite 8 engines `^20.19.0 \|\| >=22.12.0` and local Node 22.23.2 | **PASS** |
+| `npm ci` usable | `package-lock.json` committed (updated in Step 11) | **PASS** |
+
+### Manual check (GitHub, post-push)
+
+- [ ] Push of `v1` (or merge of the PR into `v1`) → Actions run builds,
+      tests pass, Pages deploys `dist/`.
+- [ ] PR from a feature branch → build/test run, **no** deployment.
+- [ ] Manual "Run workflow" from a non-`v1` branch → not offered.
+
+---
+
 # Overall Migration Status (updated on `claude-all`, 2026-09-27)
 
 | Step | Status |
@@ -582,8 +618,8 @@ as fully verified until a human clicks through them.
 | 12 — Reintroduce animations and the demo | ✅ (typewriter + magic demo; browser checks PENDING) |
 | 13 — Preserve static files, privacy, and SEO | ✅ |
 | 14 — Verify the production build | ✅ automated; browser checklist items PENDING |
-| 15 — Update GitHub Actions | ⏳ **NEXT** |
-| 16 — Remove obsolete code and update documentation | ⏳ |
+| 15 — Update GitHub Actions | ✅ (local; not pushed) |
+| 16 — Remove obsolete code and update documentation | ⏳ **NEXT** |
 | 17 — Review and commit | ✅ (each step committed as it completes) |
 | 18 — Publish | ⛔ requires explicit user authorization (not performed) |
 
