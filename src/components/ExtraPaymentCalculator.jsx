@@ -8,14 +8,16 @@
 // `deriveExtraPaymentResult` helper in `src/lib/extraMagic.js` — no
 // formatted or derived value is stored in state.
 //
-// Button-gated display (owner-requested fix after Step 17): the result
-// card stays blank until "Calculate Savings" is clicked. A recalculation
-// is committed ONLY by
-//   - the Calculate Savings button,
-//   - the Monthly / One-time toggle, and only while a result is already
-//     on screen (it refreshes with the new mode; it never reveals a
-//     blank result by itself),
+// Button-gated display (owner-requested fix after Step 17, tightened
+// 2026-09-27): the result card stays blank until "Calculate Savings"
+// is clicked, and it changes ONLY when a recalculation is committed by
+//   - the Calculate Savings button, or
 //   - the Step 12 intro demo (its scripted showcase, as in the original).
+// The Monthly / One-time toggle merely selects the mode the NEXT
+// calculation will use: it never commits, and the displayed result is
+// derived from the mode recorded in the committed snapshot
+// (`__modeAtCommit`), so toggling the mode leaves the on-screen numbers
+// frozen until Calculate Savings is clicked again.
 // Typing in the fields and the main → magic tab-sync prefill the inputs
 // WITHOUT committing, so no value appears before the first button click.
 // (The original also recalculated on every `input` event; the owner
@@ -25,16 +27,16 @@
 // DOM behavior preserved from Step 8 (and from original script.js):
 //   - Same DOM structure, CSS classes, IDs, labels, aria attributes.
 //   - Same isPIOverride semantics at commit time: the Calculate Savings
-//     button and the mode toggle commit with isPIOverride=false, so the
-//     calculated P&I wins and auto-fills the field (the original's
-//     button behavior, preserved).
+//     button commits with isPIOverride=false, so the calculated P&I wins
+//     and auto-fills the field (the original's button behavior,
+//     preserved).
 //   - Same main → magic sync driven by `seedNonce` (only when magic
 //     price is empty and main price > 0) — but the sync no longer
 //     commits a recalculation (button-gated display, above).
 //   - Same "on-blur format" behavior on numeric fields (preserved from
 //     Step 8 for balance / price / down / tax / insurance).
-//   - Same toggle button behavior for Monthly vs One-time, except the
-//     toggle only recalcs while a result is already on screen.
+//   - Monthly vs One-time toggle: selects the mode for the next
+//     calculation; it never recalcs by itself (button-gated display).
 //
 // Step 10 requirements honored here:
 //   #1 P&I / balance / mode — all preserved (see `submitted`).
@@ -138,9 +140,16 @@ export default function ExtraPaymentCalculator({ mainInputs, seedNonce, active }
   // The `__isPIOverride` flag is what was in effect at the moment the
   // recalc was triggered; it is the same flag `script.js#calculateMagic`
   // received as an argument.
+  // The mode comes from the committed snapshot (`__modeAtCommit`), NOT
+  // the live toggle state: the displayed result must stay frozen at the
+  // mode it was calculated with until Calculate Savings commits again.
+  // (Every commit path — button, demo — records `__modeAtCommit`, so it
+  // is always present whenever `submitted` is not null; when there is no
+  // submission the mode argument is irrelevant, `deriveExtraPaymentResult`
+  // returns the blank shape.)
   const derived = deriveExtraPaymentResult(
     fieldOnly(submitted),
-    extraMode,
+    submitted ? submitted.__modeAtCommit : extraMode,
     (submitted && submitted.__isPIOverride) === true
   );
   const result = derived; // named for readability at JSX call-sites
@@ -250,16 +259,11 @@ export default function ExtraPaymentCalculator({ mainInputs, seedNonce, active }
     // demo. (Keeps the Step 10 early-return for an already-active mode.)
     stopOnInteraction();
     setExtraMode(mode);
-    // Button-gated display: a toggle refreshes a result that is already
-    // on screen with the new mode (original: every toggle recalc'd),
-    // but it must never reveal a blank result by itself.
-    if (submitted) {
-      setSubmitted({
-        ...magicInputs,
-        __isPIOverride: false,
-        __modeAtCommit: mode,
-      });
-    }
+    // Button-gated display (tightened 2026-09-27): the toggle only
+    // selects the mode the NEXT calculation will use. It never commits a
+    // recalculation — the displayed result (derived from
+    // `submitted.__modeAtCommit`) stays exactly as it was until
+    // Calculate Savings is clicked.
   }
 
   // ── Blur formatters (preserved from Step 8) ──

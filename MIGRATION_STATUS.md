@@ -830,3 +830,30 @@ v4's default palette, in the order the original CDN build painted:
 P&I `#36a2eb`, Taxes `#ff6384`, Insurance `#ff9f40`, HOA `#ffcd56`.
 No other chart behavior changed. `npm test` 92/92; `npm run build`
 clean.
+
+---
+
+# Post-review fix (2026-09-27): mode toggle must not recalculate
+
+**Owner-reported issue:** on the Extra Payment Magic tab, switching
+Monthly ↔ One-time still re-ran the calculation and changed the total
+interest saved on screen.
+
+**Root cause:** two things kept the result live with the toggle.
+(1) `selectExtraMode` re-committed a recalculation while a result was
+on screen (the post-Step-17 "refreshes with the new mode" rule), and
+(2) the render-time derive passed the *live* `extraMode` to
+`deriveExtraPaymentResult` rather than the snapshot's `__modeAtCommit`,
+so even without the re-commit the displayed numbers would have changed
+on toggle.
+
+**Fix (`src/components/ExtraPaymentCalculator.jsx`):** the toggle now
+only selects the mode the *next* calculation will use — it aborts a
+running demo and updates the button state, but never commits. The
+displayed result is derived from `submitted.__modeAtCommit` (recorded
+by every commit path — Calculate Savings button and the intro demo),
+so the on-screen numbers stay frozen at the mode they were calculated
+with until Calculate Savings is clicked again. This supersedes the
+post-Step-17 rule that the toggle "refreshes with the new mode";
+calculation semantics, rounding, and `src/lib/extraMagic.js` are
+untouched. `npm test` 92/92; `npm run build` clean.
