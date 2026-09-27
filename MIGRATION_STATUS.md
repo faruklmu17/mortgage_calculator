@@ -351,6 +351,53 @@ Full re-verification of the Qwen baseline (`b7655fa`, branch `claude-all`).
 
 ---
 
+# Step 11 Detail
+
+## Step 11: Integrate the chart — ✅ COMPLETE
+
+**Scope honored:** The donut now uses the first-party `chart.js` (4.5.1)
+package via `react-chartjs-2` (5.3.1). The Chart.js CDN `<script>` was
+removed from `index.html` only after the React chart built and served
+successfully. No calculation, layout, or validation code was touched.
+No push, merge, or deploy.
+
+### Files changed / created
+
+| File | Change |
+|------|--------|
+| `src/components/PaymentChart.jsx` | **Created.** Registers `ArcElement`, `Tooltip`, `Legend`, `DoughnutController`; renders `<Doughnut id="paymentChart">` with the original's exact config: labels P&I/Taxes/Insurance/HOA, `borderWidth 0`, `hoverOffset 4`, `cutout 70%`, bottom point-style legend (#94a3b8, 12px, padding 20), currency tooltip, `responsive` + `maintainAspectRatio: false`. No explicit segment colors — the original used Chart.js' default palette, preserved. |
+| `src/components/PaymentCalculator.jsx` | Removed `canvasRef`/`chartRef` and the manual create/destroy `useEffect`. Renders `<PaymentChart pi tax insurance hoa />` (numeric props) only when `hasCalc` — before the first calculation and after validation errors the chart is unmounted (react-chartjs-2 destroys the instance), the same clean-canvas outcome the manual effect produced. |
+| `index.html` | Removed `<script src="https://cdn.jsdelivr.net/npm/chart.js" defer>`. |
+| `package.json` / `package-lock.json` | Added `chart.js` + `react-chartjs-2` (prod deps). |
+
+### Verification
+
+| Check | Method | Result |
+|-------|--------|--------|
+| Unit suite | `npm test` | **PASS** — 92/92 (unchanged; chart is UI-only) |
+| Production build | `npm run build` | **PASS** — 24→25 modules; JS 403.02 kB (chart.js bundled); no warnings |
+| CDN gone from built page | `grep -c "cdn.jsdelivr.net" dist/index.html` | **PASS** — 0 occurrences |
+| No `window.Chart` references left | `grep -rn "window.Chart\|new Chart(" src/ index.html` | **PASS** — none |
+| `paymentChart` canvas id preserved | grep of built JS | **PASS** — react-chartjs-2 forwards the id to `<canvas>` |
+| Built page serves | `npm run preview` + curl | **PASS** — 200 for index / JS / CSS |
+
+### Manual browser check (not yet performed — no browser access)
+
+- [ ] Calculate A1 ($400k/$80k/6.5/30/5,500/1,200/0) → donut shows 4
+      segments (P&I dominant), legend bottom, tooltip formats currency.
+- [ ] Validation error (blank price) → chart disappears; canvas clean.
+- [ ] Recalculate with different values → chart updates, no duplicate
+      canvas instances, no console errors.
+- [ ] Tab switch away and back → chart re-renders correctly.
+
+### Deviations
+
+- Chart now updates **in place** on data change (react-chartjs-2) instead of
+  the original's destroy/recreate per calculation. Visually identical for
+  this single-canvas use; lifecycle cleanup is library-managed.
+
+---
+
 # Overall Migration Status (end of step 10 session)
 
 | Step | Status |
