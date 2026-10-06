@@ -13,7 +13,7 @@ name: Build and deploy Vite site to GitHub Pages
 on:
   # Runs on pushes targeting the production branch (v1 deploys the site)
   push:
-    branches: ["v1"]
+    branches: ["main"]
 
   # Validation only: PRs are tested and built, never deployed
   pull_request:

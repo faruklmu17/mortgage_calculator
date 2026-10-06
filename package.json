@@ -9,6 +9,17 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run"
+  "name": "mortgage_calculator",
+  "version": "1.0.0",
+  "description": "",
+  "main": "script.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed"
   },
   "repository": {
     "type": "git",
@@ -23,6 +34,10 @@
   ],
   "author": "Mortgage Payoff Lab",
   "license": "ISC",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
   "bugs": {
     "url": "https://github.com/faruklmu17/mortgage_calculator/issues"
   },
@@ -37,5 +52,10 @@
     "@vitejs/plugin-react": "^6.1.1",
     "vite": "^8.3.0",
     "vitest": "^4.1.11"
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^22.20.3",
+    "http-server": "^14.1.1",
+    "typescript": "^7.0.2"
   }
 }
