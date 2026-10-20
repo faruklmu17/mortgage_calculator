@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -9,8 +9,8 @@
     <link rel="canonical" href="https://mortgagepayofflab.com/" />
 
     <!-- Primary SEO Meta Tags -->
-    <title>Mortgage Payoff Calculator – Monthly Payment & Payoff Insights</title>
-    <meta name="title" content="Mortgage Payoff Calculator – Monthly Payment & Payoff Insights" />
+    <title>Mortgage Payoff Calculator â€“ Monthly Payment & Payoff Insights</title>
+    <meta name="title" content="Mortgage Payoff Calculator â€“ Monthly Payment & Payoff Insights" />
     <meta name="description"
         content="Estimate your monthly mortgage payment (PITI) and understand how your loan costs break down. Add taxes, insurance, HOA, and compare terms." />
     <meta name="author" content="Mortgage Payoff Lab" />
@@ -18,7 +18,7 @@
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://mortgagepayofflab.com/" />
-    <meta property="og:title" content="Mortgage Payoff Lab – Monthly Payment Calculator" />
+    <meta property="og:title" content="Mortgage Payoff Lab â€“ Monthly Payment Calculator" />
     <meta property="og:description"
         content="Calculate monthly mortgage payments including taxes, insurance, and HOA fees. See your principal & interest breakdown." />
     <meta property="og:image" content="preview.png" />
@@ -26,7 +26,7 @@
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
     <meta property="twitter:url" content="https://mortgagepayofflab.com/" />
-    <meta property="twitter:title" content="Mortgage Payoff Lab – Monthly Payment Calculator" />
+    <meta property="twitter:title" content="Mortgage Payoff Lab â€“ Monthly Payment Calculator" />
     <meta property="twitter:description"
         content="Estimate your monthly mortgage payment (PITI) and see your principal & interest breakdown instantly." />
     <meta property="twitter:image" content="preview.png" />
@@ -64,7 +64,7 @@
         "name": "How is my monthly mortgage payment calculated?",
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": "The monthly payment is calculated using the standard amortization formula: M = P [ i(1 + i)^n ] / [ (1 + i)^n – 1 ]. It includes Principal and Interest, plus estimated property taxes, homeowners insurance, and HOA fees."
+          "text": "The monthly payment is calculated using the standard amortization formula: M = P [ i(1 + i)^n ] / [ (1 + i)^n â€“ 1 ]. It includes Principal and Interest, plus estimated property taxes, homeowners insurance, and HOA fees."
         }
       }, {
         "@type": "Question",
@@ -114,7 +114,20 @@
         </div>
     </header>
 
-    <main class="calculator-wrapper" id="calculator">
+    <section class="weather-widget" id="weatherWidget" aria-label="Local weather">
+  <div class="weather-heading">
+    <h2>Local Weather</h2>
+    <p id="weatherLocation">Discover the weather around you</p>
+  </div>
+
+  <button type="button" id="getWeatherBtn" class="get-weather-btn">
+  <span aria-hidden="true">📍</span> Show My Local Weather
+</button>
+<div class="weather-content" id="weatherContent" aria-live="polite">
+    <p id="weatherStatus">Allow location access to see your local weather.</p>
+  </div>
+</section>
+<main class="calculator-wrapper" id="calculator">
         <!-- Input Section -->
         <article class="calc-card">
             <h1>Mortgage <span style="color: var(--primary);">Payoff Lab</span></h1>
@@ -456,7 +469,7 @@
                         interest?</h4>
                     <p style="font-size: 0.95rem;">Most lenders apply extra payments directly to the <strong>Principal
                             Balance</strong>. This is powerful because interest is calculated as a percentage of your
-                        remaining balance—lower balance equals less interest charged next month.</p>
+                        remaining balanceâ€”lower balance equals less interest charged next month.</p>
                 </div>
                 <div
                     style="background: var(--glass); padding: 25px; border-radius: 16px; border: 1px solid var(--glass-border);">
@@ -495,8 +508,8 @@
         <p>
             Planning to buy a home? <strong>Mortgage Payoff Lab</strong> helps you estimate your monthly housing costs
             so you
-            can budget with confidence. This calculator includes the common components of a payment—principal, interest,
-            property taxes, homeowners insurance, and HOA fees—so you can understand the true monthly cost.
+            can budget with confidence. This calculator includes the common components of a paymentâ€”principal, interest,
+            property taxes, homeowners insurance, and HOA feesâ€”so you can understand the true monthly cost.
         </p>
 
         <div id="tips"
@@ -562,7 +575,7 @@
                 style="background: var(--glass); padding: 30px; border-radius: 20px; border: 1px solid var(--glass-border);">
                 <h4 style="color: #fff; margin-bottom: 10px;">How This Calculation Works</h4>
                 <p style="font-size: 0.9rem;">
-                    We use the standard amortization formula: <strong>M = P [ i(1 + i)^n ] / [ (1 + i)^n – 1 ]</strong>.
+                    We use the standard amortization formula: <strong>M = P [ i(1 + i)^n ] / [ (1 + i)^n â€“ 1 ]</strong>.
                     Where P is principal, i is monthly interest, and n is number of months. PITI represents Principal,
                     Interest,
                     Taxes, and Insurance.
@@ -628,3 +641,5 @@
 </body>
 
 </html>
+
+

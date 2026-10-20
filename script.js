@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function () {
+﻿document.addEventListener('DOMContentLoaded', function () {
   // Elements
   const priceInput = document.getElementById('price');
   const downPaymentInput = document.getElementById('downPayment');
@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const principal = price - downPayment;
 
-    // Mortgage Formula: P [ i(1 + i)^n ] / [ (1 + i)^n – 1]
+    // Mortgage Formula: P [ i(1 + i)^n ] / [ (1 + i)^n â€“ 1]
     const x = Math.pow(1 + monthlyRate, termMonths);
     const monthlyPI = (principal * x * monthlyRate) / (x - 1);
 
@@ -576,3 +576,180 @@ document.addEventListener('DOMContentLoaded', function () {
 
   runDemoOnce();
 });
+
+// ===== Local Weather Widget =====
+(function initWeatherWidget() {
+  const API_KEY = 'e179175f784399e074d0075f33d96573';
+  const weatherContent = document.getElementById('weatherContent');
+  const weatherStatus = document.getElementById('weatherStatus');
+  const weatherLocation = document.getElementById('weatherLocation');
+  const cityForm = document.getElementById('weatherCityForm');
+  const cityInput = document.getElementById('weatherCity');
+
+  if (!weatherContent || !weatherStatus || !weatherLocation) {
+    return;
+  }
+
+  function showStatus(message) {
+    weatherContent.replaceChildren();
+    weatherStatus.textContent = message;
+    weatherContent.appendChild(weatherStatus);
+  }
+
+  async function getWeather(params, fallbackName) {
+    showStatus('Loading weather...');
+
+    try {
+      const url = new URL('https://api.openweathermap.org/data/2.5/weather');
+      url.search = new URLSearchParams({
+        ...params,
+        appid: API_KEY,
+        units: 'imperial'
+      }).toString();
+
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error('The weather API key was rejected. Check that it is valid and active.');
+        }
+        if (response.status === 404) {
+          throw new Error('We could not find that location. Try another city.');
+        }
+        throw new Error('Weather is temporarily unavailable. Please try again.');
+      }
+
+      const data = await response.json();
+      renderWeather(data, fallbackName);
+    } catch (error) {
+      showStatus(error.message || 'Could not load weather. Please try again.');
+    }
+  }
+
+  function renderWeather(data, fallbackName) {
+    weatherContent.replaceChildren();
+
+    const current = document.createElement('div');
+    current.className = 'weather-now';
+
+    const icon = document.createElement('img');
+    icon.src = `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`;
+    icon.alt = data.weather[0].description;
+    icon.width = 76;
+    icon.height = 76;
+
+    const summary = document.createElement('div');
+
+    const temperature = document.createElement('div');
+    temperature.className = 'weather-temperature';
+    temperature.textContent = `${Math.round(data.main.temp)}Â°F`;
+
+    const description = document.createElement('div');
+    description.className = 'weather-description';
+    description.textContent = data.weather[0].description;
+
+    summary.append(temperature, description);
+    current.append(icon, summary);
+
+    const details = document.createElement('div');
+    details.className = 'weather-details';
+
+    const feelsLike = document.createElement('span');
+    feelsLike.textContent = `Feels like ${Math.round(data.main.feels_like)}Â°F`;
+
+    const humidity = document.createElement('span');
+    humidity.textContent = `Humidity ${data.main.humidity}%`;
+
+    const wind = document.createElement('span');
+    wind.textContent = `Wind ${Math.round(data.wind.speed)} mph`;
+
+    details.append(feelsLike, humidity, wind);
+    weatherContent.append(current, details);
+
+    weatherLocation.textContent = data.name || fallbackName || 'Your location';
+  }
+
+  function loadFromBrowserLocation() {
+    if (!navigator.geolocation) {
+      showStatus('Location is not supported by this browser. Search for a city below.');
+      return;
+    }
+
+    showStatus('Requesting your location...');
+
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        getWeather({
+          lat: position.coords.latitude,
+          lon: position.coords.longitude
+        });
+      },
+      error => {
+        let message = 'Could not access your location. Search for a city below.';
+        if (error.code === error.PERMISSION_DENIED) {
+          message = 'Location permission was denied. Search for a city below.';
+        } else if (error.code === error.TIMEOUT) {
+          message = 'Location lookup timed out. Search for a city below.';
+        }
+        showStatus(message);
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 10000,
+        maximumAge: 300000
+      }
+    );
+  }
+if (API_KEY === 'PASTE_YOUR_API_KEY_HERE' || !API_KEY.trim()) {
+    showStatus('Add your OpenWeather API key in script.js to enable weather.');
+    return;
+  }
+
+  const getWeatherBtn = document.getElementById('getWeatherBtn');
+
+  if (getWeatherBtn) {
+    getWeatherBtn.addEventListener('click', () => {
+      getWeatherBtn.disabled = true;
+      getWeatherBtn.textContent = 'Getting your location...';
+
+      if (!navigator.geolocation) {
+        showStatus('Your browser does not support location access.');
+        getWeatherBtn.disabled = false;
+        getWeatherBtn.textContent = '📍 Try Again';
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        position => {
+          getWeather({
+            lat: position.coords.latitude,
+            lon: position.coords.longitude
+          });
+          getWeatherBtn.disabled = false;
+          getWeatherBtn.textContent = '📍 Refresh Local Weather';
+        },
+        error => {
+          let message = 'Could not get your location. Please try again.';
+          if (error.code === error.PERMISSION_DENIED) {
+            message = 'Location permission was denied. Allow location access in your browser settings, then try again.';
+          } else if (error.code === error.TIMEOUT) {
+            message = 'Location lookup timed out. Please try again.';
+          }
+
+          showStatus(message);
+          getWeatherBtn.disabled = false;
+          getWeatherBtn.textContent = '📍 Try Again';
+        },
+        {
+          enableHighAccuracy: false,
+          timeout: 15000,
+          maximumAge: 300000
+        }
+      );
+    });
+  }
+})();
+// ===== End Local Weather Widget =====
+
+
+
