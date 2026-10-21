@@ -1,8 +1,8 @@
-// Step 8 — React root for the interactive calculator area.
+﻿// Step 8 â€” React root for the interactive calculator area.
 //
 // Owns the two things both tabs need:
-//   • activeTab  — which calculator tab is displayed
-//   • mainInputs — shared loan inputs (price, down, rate, term, tax, insurance, HOA)
+//   â€¢ activeTab  â€” which calculator tab is displayed
+//   â€¢ mainInputs â€” shared loan inputs (price, down, rate, term, tax, insurance, HOA)
 //
 // Extra-payment-only state (magic*, extra-mode, magic result/error) stays in
 // ExtraPaymentCalculator.  Main-tab-only state (downPaymentMode, main
@@ -15,6 +15,7 @@
 import { useEffect, useRef, useState } from 'react';
 import PaymentCalculator from './components/PaymentCalculator.jsx';
 import ExtraPaymentCalculator from './components/ExtraPaymentCalculator.jsx';
+import WeatherWidget from './components/WeatherWidget.jsx';
 import { EVENTS } from './navBridge.js';
 
 const INITIAL_MAIN_INPUTS = {
@@ -101,6 +102,9 @@ export default function CalculatorApp() {
 
   return (
     <>
+      <WeatherWidget />
+
+      
       <main
         id="calculator"
         className="calculator-wrapper"
@@ -129,3 +133,5 @@ export default function CalculatorApp() {
     </>
   );
 }
+
+

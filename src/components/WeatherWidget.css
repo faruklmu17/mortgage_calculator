@@ -1,0 +1,172 @@
+﻿.weather-widget {
+  width: min(100% - 32px, 1200px);
+  box-sizing: border-box;
+  margin: 24px auto;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 20px 32px;
+  align-items: center;
+  color: #f8fafc;
+  background: rgba(30, 41, 59, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 18px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+  backdrop-filter: blur(12px);
+}
+
+.weather-heading h2 {
+  margin: 0 0 6px;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.weather-heading p,
+.weather-status {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.get-weather-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 11px 16px;
+  color: #fff;
+  background: #4f46e5;
+  border: 0;
+  border-radius: 9px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.get-weather-btn:hover {
+  background: #4338ca;
+}
+
+.get-weather-btn:focus-visible,
+.weather-city-controls button:focus-visible,
+.weather-city-controls input:focus-visible {
+  outline: 2px solid #10b981;
+  outline-offset: 3px;
+}
+
+.get-weather-btn:disabled,
+.weather-city-controls button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.weather-content {
+  min-width: 0;
+}
+
+.weather-city-form {
+  grid-column: 1 / -1;
+  padding-top: 16px;
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.weather-city-form label {
+  display: block;
+  margin-bottom: 8px;
+  color: #cbd5e1;
+  font-size: 0.85rem;
+}
+
+.weather-city-controls {
+  display: flex;
+  gap: 10px;
+}
+
+.weather-city-controls input {
+  flex: 1;
+  min-width: 0;
+  padding: 11px 13px;
+  color: #f8fafc;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 9px;
+  font: inherit;
+}
+
+.weather-city-controls input::placeholder {
+  color: #94a3b8;
+}
+
+.weather-city-controls button {
+  padding: 11px 18px;
+  color: #fff;
+  background: #4f46e5;
+  border: 0;
+  border-radius: 9px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.weather-city-controls button:hover {
+  background: #4338ca;
+}
+
+.weather-now {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.weather-now img {
+  width: 76px;
+  height: 76px;
+  flex-shrink: 0;
+}
+
+.weather-temperature {
+  font-size: 2.2rem;
+  font-weight: 750;
+  line-height: 1.1;
+}
+
+.weather-description {
+  margin-top: 5px;
+  color: #cbd5e1;
+  text-transform: capitalize;
+}
+
+.weather-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin-top: 12px;
+  color: #cbd5e1;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 600px) {
+  .weather-widget {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 18px;
+    margin-top: 16px;
+    margin-bottom: 16px;
+  }
+
+  .weather-city-form {
+    grid-column: auto;
+  }
+
+  .weather-temperature {
+    font-size: 1.9rem;
+  }
+
+  .weather-city-controls button {
+    padding-inline: 14px;
+  }
+}
+
