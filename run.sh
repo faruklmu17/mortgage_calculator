@@ -2,7 +2,7 @@
 set -euo pipefail
 
 APP_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-WEATHER_DIR="$(dirname -- "$APP_DIR")/weather_app"
+WEATHER_DIR="$APP_DIR/weather_app"
 weather_pid=""
 vite_pid=""
 
@@ -27,7 +27,7 @@ for command in node npm python3; do
 done
 
 if [[ ! -f "$WEATHER_DIR/app.py" ]]; then
-  echo "Weather app not found at $WEATHER_DIR. Place weather_app beside mortgage_calculator." >&2
+  echo "Weather app not found at $WEATHER_DIR. Run git submodule update --init --recursive from mortgage_calculator." >&2
   exit 1
 fi
 

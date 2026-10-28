@@ -102,6 +102,8 @@ export default function CalculatorApp() {
 
   return (
     <>
+      <WeatherWidget />
+
       <main
         id="calculator"
         className="calculator-wrapper"
@@ -128,7 +130,6 @@ export default function CalculatorApp() {
         />
       </main>
 
-      <WeatherWidget />
     </>
   );
 }

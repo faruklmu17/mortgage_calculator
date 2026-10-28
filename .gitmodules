@@ -1,0 +1,3 @@
+[submodule "weather_app"]
+	path = weather_app
+	url = https://github.com/SuperElephantWS/weather_app.git

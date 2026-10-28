@@ -990,3 +990,113 @@ Verification: bash -n run.sh and git diff --check pass. A live ./run.sh
 started Flask on 5001 and Vite on 5173. With that Vite server running,
 a second Vite process using the launcher's arguments selected 5174.
 Stopped both test sessions with Ctrl+C after verification.
+
+
+---
+
+# GitHub Pages preview documentation (2026-10-24)
+
+Added GITHUB_PAGES_PREVIEW.md and linked it from README.md. The guide covers
+a separate preview repository and local copy, project-path builds, a complete
+Pages workflow, and optional Render hosting for the existing Flask weather
+app. It includes deployment checks and troubleshooting while keeping the
+production repository and domain separate. No remote resources were created,
+and no application configuration, workflow, DNS, or hosting was changed.
+
+Verification: npm run build -- --base=/mortgage-calculator-preview/ passes;
+git diff --check passes. Instructions were checked against the local files
+and official GitHub, Vite, and Render documentation. Remote deployment and
+browser verification remain steps for the reader; no deployment was performed.
+
+
+---
+
+# Nested weather repository (2026-10-27)
+
+Added weather_app as a Git submodule using the HTTPS remote
+https://github.com/SuperElephantWS/weather_app.git, pinned to commit
+76fa6d14e64da60b8e2b52528ae59ae3a0cb8c9b. Updated run.sh to start the nested
+weather app and report the submodule initialization command if it is missing.
+README.md now documents recursive cloning, initialization for existing clones,
+the nested directory layout, and the separate weather commit workflow.
+Updated WEATHER_WIDGET_SETUP.md to use the nested checkout. The original
+sibling weather repository was left in place. Work is on the watson branch.
+
+Verification: git submodule status confirms the pinned commit; the nested
+weather working tree is clean. bash -n run.sh and git diff --check pass.
+npm test passes all 92 tests across 3 files; npm run build passes. No live
+weather browser check was performed; the new checkout needs a local .env
+API key and its Python dependencies before starting Flask. No commit, push,
+or deployment was performed.
+
+
+---
+
+# Preview weather strip and calculator alignment (2026-10-27)
+
+Applied the preview repository's shared weather/calculator CSS and moved the
+weather widget above the calculator on both tabs. Reused its iframe resize
+listener with origin, source, and bounded height validation, geolocation
+permission, and responsive fallback heights. The iframe uses the nested
+weather submodule's strip layout on the existing local Flask port 5001.
+The submodule already contains the reference weather layout and scripts at
+its pinned commit, so no weather source change was needed. Updated README
+and the weather setup guide for the new layout and resizing behavior.
+Calculator mathematics and production SEO settings are unchanged.
+
+Automated verification: all 92 tests across 3 files pass; npm run build and
+git diff --check pass. Flask test-client checks against the nested weather
+app passed for strip rendering, weather icons, city-search layout
+persistence, errors, the location prompt, and the resize script. Weather
+API responses were mocked; the existing sibling virtual environment was
+used without modifying either weather checkout.
+
+Manual verification: no browser layout or live weather check was performed.
+No commit, push, or deployment was performed.
+
+
+---
+
+# README setup and final testing section (2026-10-27)
+
+Updated README.md with weather features, location permission and city-search
+behavior, weather request privacy details, prerequisites, nested repository
+structure, explicit local API-key setup, and the current watson branch.
+Documented the local iframe's public hosting limitation. Moved test, build,
+browser verification, and production preview instructions to the final
+section of the file.
+
+Verification: checked the documented npm commands against package.json and
+the deployment description against the workflow. A documentation check
+confirmed the testing section is last and branch references are current;
+git diff --check passes. No application tests or browser checks were rerun
+for this documentation-only change.
+
+
+---
+
+# Explicit contributor API-key setup (2026-10-27)
+
+Expanded README.md with OpenWeather account and API-key instructions,
+the exact nested .env location and variable name, restarting Flask after
+changes, city-search verification, troubleshooting, and local key handling.
+Clarified that each developer supplies their own key and that calculator
+features work without it. Kept testing instructions as the final section.
+
+Verification: account/key instructions checked against official OpenWeather
+setup and FAQ sources. git diff --check passes; no application tests were
+rerun for this documentation-only change.
+
+
+---
+
+# Local test release branch (2026-10-27)
+
+Created watson_local_test at the user's request to publish the current local
+weather submodule integration, responsive weather strip, launcher updates,
+and documentation. Updated active development branch instructions to match.
+
+Verification before committing: all 92 tests across 3 files pass; npm run
+build, bash -n run.sh, and git diff --check pass. No .env files are included
+in the mortgage commit, and the weather submodule working tree is clean.
+No browser or live weather verification was performed in this step.

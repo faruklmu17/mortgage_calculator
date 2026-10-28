@@ -1,22 +1,35 @@
+import { useEffect, useRef, useState } from 'react';
+
+const WEATHER_ORIGIN = 'http://127.0.0.1:5001';
+
 export default function WeatherWidget() {
+  const frameRef = useRef(null);
+  const [frameHeight, setFrameHeight] = useState(null);
+
+  useEffect(() => {
+    function handleResize(event) {
+      if (event.origin !== WEATHER_ORIGIN
+          || event.source !== frameRef.current?.contentWindow
+          || event.data?.type !== 'weather:resize') return;
+      const height = event.data.height;
+      if (Number.isFinite(height) && height >= 80 && height <= 2000) {
+        setFrameHeight(Math.ceil(height) + 2);
+      }
+    }
+    window.addEventListener('message', handleResize);
+    return () => window.removeEventListener('message', handleResize);
+  }, []);
+
   return (
-    <section
-      aria-labelledby="weather-heading"
-      style={{ maxWidth: '900px', margin: '32px auto', padding: '0 16px' }}
-    >
-      <h2 id="weather-heading">Explore the weather</h2>
+    <aside className="weather-toolbar" aria-label="Local weather">
       <iframe
-        src="http://127.0.0.1:5001/?city=New%20Haven"
-        title="City weather"
-        loading="lazy"
-        style={{
-          display: 'block',
-          width: '100%',
-          height: '600px',
-          border: 0,
-          borderRadius: '16px',
-        }}
+        ref={frameRef}
+        className="weather-frame"
+        src={`${WEATHER_ORIGIN}/?layout=strip`}
+        allow="geolocation"
+        title="Local weather and city search"
+        style={frameHeight === null ? undefined : { height: frameHeight }}
       />
-    </section>
+    </aside>
   );
 }

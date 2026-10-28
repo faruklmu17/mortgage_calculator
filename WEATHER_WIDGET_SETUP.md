@@ -1,8 +1,8 @@
 # Add the Flask weather app to the mortgage website
 
 This guide embeds the existing Flask weather page in the React mortgage
-website using an iframe. Start locally while staying on
-`watson_react_migrated`.
+website using an iframe. The weather repository is nested inside
+`mortgage_calculator/weather_app` as a Git submodule.
 
 The iframe displays a running weather website; it does not combine the
 repositories. Flask keeps the OpenWeatherMap API key on its server.
@@ -13,7 +13,7 @@ Steps 1–5 are complete locally. Public hosting in step 6 is deferred at
 your request; the integration currently uses your local Flask server.
 
 - Mortgage website: <http://127.0.0.1:5173/>
-- Weather page: <http://127.0.0.1:5001/?city=New%20Haven>
+- Weather strip: <http://127.0.0.1:5001/?layout=strip>
 - Browser checks passed for live weather, city search, unknown-city errors,
   calculations on both mortgage tabs, and iframe layout at 390px and 320px.
 - All 92 calculation tests and the production build passed.
@@ -27,7 +27,14 @@ been performed.
 Open a terminal:
 
 ```bash
-cd /Users/Watson/workWS/web_devel/weather_app
+cd mortgage_calculator
+git submodule update --init --recursive
+cd weather_app
+```
+
+If the virtual environment already exists, activate it:
+
+```bash
 source weather_env/bin/activate
 ```
 
@@ -67,60 +74,24 @@ http://127.0.0.1:5001/?city=New%20Haven
 
 Leave this terminal running.
 
-## 2. Create the React widget
+## 2. Weather strip widget
 
-Create `src/components/WeatherWidget.jsx` in the mortgage calculator repository:
+`src/components/WeatherWidget.jsx` embeds the local weather submodule at
+`http://127.0.0.1:5001/?layout=strip`. It allows optional geolocation and
+keeps city search inside the iframe. Without location permission, visitors
+can enter a city manually.
 
-```jsx
-export default function WeatherWidget() {
-  return (
-    <section
-      aria-labelledby="weather-heading"
-      style={{ maxWidth: '900px', margin: '32px auto', padding: '0 16px' }}
-    >
-      <h2 id="weather-heading">Explore the weather</h2>
-      <iframe
-        src="http://127.0.0.1:5001/?city=New%20Haven"
-        title="City weather"
-        loading="lazy"
-        style={{
-          display: 'block',
-          width: '100%',
-          height: '600px',
-          border: 0,
-          borderRadius: '16px',
-        }}
-      />
-    </section>
-  );
-}
-```
+The widget accepts `weather:resize` messages only from its own iframe and
+the configured weather origin. It uses the reported content height to fit
+the strip, with responsive CSS fallback heights until a message arrives.
+`style.css` gives the strip the calculator's glass background, rounded
+corners, matching maximum width, and horizontal padding.
 
-The city search inside the existing weather page works within the iframe.
-Adjust the iframe height if the weather page needs more space on small screens.
+## 3. Widget placement
 
-## 3. Add the widget to the mortgage app
-
-In `src/App.jsx`, add this alongside the other imports:
-
-```jsx
-import WeatherWidget from './components/WeatherWidget.jsx';
-```
-
-Near the bottom of the component, insert `<WeatherWidget />` after the
-second `</main>` and before the closing fragment:
-
-```jsx
-      </main>
-
-      <WeatherWidget />
-    </>
-  );
-}
-```
-
-This places the weather below the calculators and keeps it visible on both
-calculator tabs. Preserve the existing calculator code above this insertion.
+`src/App.jsx` renders `<WeatherWidget />` before the calculator's `<main>`.
+The weather strip stays above the calculator on both tabs. The calculator
+inputs, calculations, and static educational content remain unchanged.
 
 ## 4. Start the mortgage website
 
@@ -133,14 +104,14 @@ npm run dev
 
 If dependencies have not been installed, run `npm ci` before `npm run dev`.
 
-Open the URL Vite prints. Scroll below the calculator to see the weather page.
+Open the URL Vite prints. Look above the calculator to see the weather strip.
 Both the Flask and Vite processes must remain running.
 
 ## 5. Check the integration
 
 Confirm that:
 
-- Weather loads for New Haven.
+- Location access shows local weather, or city search works when access is declined.
 - Searching for another city updates the embedded page.
 - An unknown city displays a friendly error.
 - Both mortgage calculator tabs still work.
@@ -168,10 +139,11 @@ can stay on GitHub Pages, but the Flask app needs a separate host.
 4. Confirm that the weather page works at its public HTTPS address.
 5. Ensure the weather host allows embedding by your mortgage website. Its
    `X-Frame-Options` or Content Security Policy headers can block an iframe.
-6. Replace the local iframe `src` in `WeatherWidget.jsx` with the public URL:
+6. Replace `WEATHER_ORIGIN` in `WeatherWidget.jsx` with the public HTTPS origin.
+   The iframe URL and resize message validation both use this constant:
 
 ```jsx
-src="https://your-weather-host.example/?city=New%20Haven"
+const WEATHER_ORIGIN = 'https://your-weather-host.example';
 ```
 
 That address is a placeholder; use the actual address supplied by your host.
@@ -180,7 +152,7 @@ Update the mortgage site's privacy page to describe the embedded weather
 service and its external requests before publishing the integration.
 
 This guide does not change the mortgage deployment workflow or require
-switching branches. Keep development on `watson_react_migrated`.
+switching branches. Keep development on `watson_local_test`.
 
 ## Local hosting limitations
 
@@ -204,7 +176,7 @@ Keeping it private does not require keeping Flask on your personal computer.
 | Weather API key error | Check `API_KEY` in the weather app's `.env` or hosting environment, then restart Flask. |
 | Weather shows literal Jinja placeholders | Open the Flask URL rather than serving the template as a static file. |
 | Public iframe refuses to load | Check HTTPS, browser console errors, and the weather host's embedding headers. |
-| Weather content is clipped or scrolls | Increase the iframe height and check the weather page's mobile layout. |
+| Weather content is clipped or scrolls | Check that embed.js loads and weather:resize messages match WEATHER_ORIGIN; inspect the mobile layout. |
 | Mortgage page works but weather stops | The weather app runs separately; check its process, hosting, and API connectivity. |
 
 ## References

@@ -204,10 +204,45 @@ body {
     cursor: pointer;
 }
 
-/* --- Layout Wrapper (adjusted) --- */
+/* Keep weather and both calculator tabs aligned at every viewport width. */
+.weather-toolbar,
 .calculator-wrapper {
     width: 100%;
     max-width: 1200px;
+    margin-inline: auto;
+    padding: 0 20px;
+}
+
+/* Always-visible weather strip between the menu and calculator. */
+.weather-toolbar {
+    margin-top: 20px;
+}
+
+.weather-frame {
+    display: block;
+    width: 100%;
+    height: 180px;
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    background: var(--glass);
+    color-scheme: dark;
+}
+
+.weather-toolbar ~ .calculator-wrapper {
+    margin-top: 20px;
+}
+
+/* Fallback sizes until the embedded app reports its content height. */
+@media (max-width: 960px) {
+    .weather-frame { height: 260px; }
+}
+
+@media (max-width: 640px) {
+    .weather-frame { height: 380px; }
+}
+
+/* --- Layout Wrapper (adjusted) --- */
+.calculator-wrapper {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 30px;
@@ -216,7 +251,6 @@ body {
     animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
     margin-top: 40px;
     /* added margin due to sticky header */
-    padding: 0 20px;
 }
 
 @keyframes fadeInUp {

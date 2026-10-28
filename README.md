@@ -28,6 +28,13 @@
 - (Like most static sites, the page loads its fonts and icons from public CDNs; those requests carry no calculator data.)
 - Only `sessionStorage` is used to remember that the intro demo has already played.
 
+### 🌤️ Local Weather
+
+- Compact weather strip above both calculator tabs, aligned with the calculator layout.
+- Requests browser location permission to show nearby weather; city search remains available if permission is denied or location detection fails.
+- Automatically adjusts the embedded weather page's height for desktop and mobile.
+- Runs the separate Flask weather app as a nested Git submodule. Weather searches send the city or permitted coordinates to Flask, which requests OpenWeatherMap data; mortgage inputs stay in the browser.
+
 ### 📈 SEO & AI-Ready
 - JSON-LD structured data (`SoftwareApplication` + `FAQPage`).
 - Open Graph & Twitter Card tags (absolute image URLs for social crawlers).
@@ -50,6 +57,7 @@
 | Build      | Vite                                             |
 | Tests      | Vitest (pure calculation modules)                |
 | Charts     | Chart.js + react-chartjs-2 (bundled, no CDN)     |
+| Weather    | Flask + OpenWeatherMap, embedded through an iframe |
 | Icons      | [Font Awesome 6](https://fontawesome.com/) (CDN) |
 | Fonts      | Google Fonts — *Outfit* + *Inter*                |
 | Hosting    | GitHub Pages (custom domain via `CNAME`)         |
@@ -63,6 +71,10 @@ suite exercises directly.
 ### Requirements
 
 Node.js **20.19+ or 22.12+** (Vite 8 engine requirement). Node 22 LTS is recommended and is what CI uses.
+
+Also install npm, Git, and Python 3 with `venv` and pip support. Live weather
+requires an OpenWeatherMap API key. First-time dependency installation
+requires internet access.
 
 ---
 
@@ -78,7 +90,8 @@ Node.js **20.19+ or 22.12+** (Vite 8 engine requirement). Node 22 LTS is recomme
 │   ├── components/
 │   │   ├── PaymentCalculator.jsx     # Main PITI calculator tab
 │   │   ├── ExtraPaymentCalculator.jsx# Extra Payment Magic tab
-│   │   └── PaymentChart.jsx          # Chart.js donut (react-chartjs-2)
+│   │   ├── PaymentChart.jsx          # Chart.js donut (react-chartjs-2)
+│   │   └── WeatherWidget.jsx         # Weather strip + iframe resizing
 │   ├── hooks/
 │   │   ├── useTypewriterPlaceholder.js # Animated price-field placeholder
 │   │   └── useMagicDemo.js             # First-visit magic-tab intro demo
@@ -90,6 +103,9 @@ Node.js **20.19+ or 22.12+** (Vite 8 engine requirement). Node 22 LTS is recomme
 │       ├── extraMagic.js       # Full magic-tab result derivation
 │       └── *.test.js           # Baseline-pinned unit tests
 ├── style.css                   # Design system, components, responsive rules
+├── run.sh                      # Starts Vite and the nested Flask weather app
+├── .gitmodules                 # Weather repository URL and submodule path
+├── weather_app/                # Separate Flask repository, pinned as a submodule
 ├── public/
 │   ├── privacy.html            # Privacy Policy (self-contained page)
 │   ├── CNAME                   # Custom domain → mortgagepayofflab.com
@@ -145,6 +161,61 @@ All of this lives in `src/lib/` (see the file table above) and is pinned by the 
 
 ## 🚀 Run Locally
 
+Clone the repository together with its weather submodule:
+
+```bash
+git clone --recurse-submodules https://github.com/faruklmu17/mortgage_calculator.git
+cd mortgage_calculator
+```
+
+If you already cloned the repository, run this from `mortgage_calculator`:
+
+```bash
+git submodule update --init --recursive
+```
+
+The repositories are arranged as follows:
+
+```text
+mortgage_calculator/
+├── run.sh
+└── weather_app/   # Separate Git repository managed as a submodule
+```
+
+### Set up your weather API key
+
+Each developer must supply their own OpenWeatherMap API key. Cloning the
+repositories does **not** include an API key or a configured `.env` file.
+
+1. Create an OpenWeather account and verify your email. Follow the official
+   [API key setup instructions](https://openweathermap.org/appid), then copy
+   your key from your account's **API keys** tab.
+2. In your editor, create a file named exactly `.env` inside the nested
+   `mortgage_calculator/weather_app/` directory. Do not put it in the
+   mortgage repository root or name it `.env.txt`.
+3. Add the following line, replacing the placeholder with your actual key:
+
+```dotenv
+API_KEY=your_openweathermap_key
+```
+
+4. Save the file, then run `./run.sh` from `mortgage_calculator`. If the
+   servers are already running, press **Ctrl+C** and restart them so Flask
+   reads the updated key.
+5. Open the Local URL printed by Vite and search for a city in the weather
+   strip to confirm weather data loads. Location permission is optional.
+
+If the weather widget reports an invalid or missing key, check the file's
+location, the exact variable name `API_KEY`, and that you replaced the
+placeholder. For account or key activation issues, consult the official
+[OpenWeather FAQ](https://openweathermap.org/faq).
+
+Keep `.env` local; it is ignored by the weather repository. Do not commit
+or share your key. Flask reads it on the server; it is not included in the
+React bundle. The mortgage calculators work without a weather API key.
+
+### Start both apps
+
 From the `mortgage_calculator` directory, run:
 
 ```bash
@@ -156,14 +227,19 @@ If port 5173 is busy, Vite automatically selects the next available port,
 such as 5174. The script starts both Vite and the embedded Flask weather
 server. Press **Ctrl+C** to stop both.
 
-Requires Node.js (see Requirements above), npm, Python 3, and the sibling
-`weather_app` directory. On first use, it installs missing Node dependencies
+Requires Node.js (see Requirements above), npm, Python 3, and the initialized
+`weather_app` submodule. On first use, it installs missing Node dependencies
 and creates the weather Python environment and installs its dependencies;
 these downloads require internet access. For live weather, set
 `API_KEY=your_openweathermap_key` in `weather_app/.env`.
 
 The weather iframe requires port **5001**. If that port is already in use,
 stop the existing weather server before running the script.
+
+Weather appears as a compact strip above both calculator tabs, with city
+search and optional location access. The embedded page adjusts its height
+to fit its content on desktop and mobile. If location access is unavailable
+or declined, enter a city to see its weather.
 
 ### Manual startup
 
@@ -183,7 +259,7 @@ command from the `mortgage_calculator` directory.
 ### Start the embedded weather page
 
 The weather iframe requires a separate Flask server on port **5001**.
-In a **second terminal**, starting from the `web_devel` workspace directory:
+In a **second terminal**, starting from the `mortgage_calculator` directory:
 
 ```bash
 cd weather_app
@@ -198,29 +274,25 @@ before starting Flask. Keep both terminals running to use the calculator
 and embedded weather together. See [the weather setup guide](WEATHER_WIDGET_SETUP.md)
 for detailed setup and troubleshooting.
 
-### Tests and production preview
+### Working on the weather submodule
 
-Run these commands from `mortgage_calculator`:
-
-```bash
-# Run the calculation test suite
-npm test
-
-# Build and serve the production version locally
-npm run build
-npm run preview -- --host 127.0.0.1 --port 4173
-```
-
-Open **<http://127.0.0.1:4173/>** for the production preview, or the URL
-printed by Vite if that port is busy. The weather iframe still requires Flask
-on port 5001.
+The mortgage repository records a specific weather commit. Commit and push
+weather changes in the weather repository first, then stage `weather_app`
+and commit the updated reference in the mortgage repository. After pulling
+mortgage changes, run `git submodule update --init --recursive` to check out
+the recorded weather version. Keep `weather_app/.env` local; each developer
+must supply their own API key.
 
 ---
 
 ## 📦 Deployment
 
-Continue development on **`watson_iframe`**. You can run the app,
-tests, and production build locally using the commands above while staying
+For a separate test site, follow the [GitHub Pages preview guide](GITHUB_PAGES_PREVIEW.md).
+It includes a dedicated preview repository, a deployment workflow, and optional
+public hosting for the embedded weather app.
+
+Continue development on **`watson_local_test`**. You can run the app,
+tests, and production build locally using this README's commands while staying
 on this branch.
 
 The repo is configured for **GitHub Pages** on the custom domain
@@ -228,11 +300,17 @@ The repo is configured for **GitHub Pages** on the custom domain
 The current [deployment workflow](.github/workflows/deploy.yml) runs
 automatically on pushes to `main`: it installs dependencies, runs tests,
 builds the site, and publishes **`dist/`**. Pushing to
-`watson_iframe` does not trigger that automatic deployment.
+`watson_local_test` does not trigger that automatic deployment.
 
-Publishing from `watson_iframe` would require a separate workflow
+Publishing from `watson_local_test` would require a separate workflow
 change. For current development, stay on this branch and use the local
 development or preview server.
+
+The current iframe points to `http://127.0.0.1:5001`, which refers to each
+visitor's own computer. Public weather requires hosting Flask separately
+over HTTPS and changing `WEATHER_ORIGIN` in `src/components/WeatherWidget.jsx`
+to that origin. GitHub Pages cannot run Flask. The submodule makes local
+setup reproducible; it does not host the weather service.
 
 ---
 
@@ -264,7 +342,7 @@ development or preview server.
 
 For current development:
 
-1. Keep working on `watson_iframe`.
+1. Keep working on `watson_local_test`.
 2. Keep the migration's constraints: no backend, no routing, no TypeScript, no styling framework; keep the math in `src/lib/` and framework-free.
 3. Run `npm test` and `npm run build`, and verify the change in the browser (`npm run dev`).
 4. Review and commit changes on this branch.
@@ -274,3 +352,34 @@ For current development:
 ## 📜 License
 
 © 2025 Mortgage Payoff Lab. See the [Privacy Policy](privacy.html) for how the site handles (i.e. doesn't handle) your data.
+
+---
+
+## 🧪 Run Tests and Verify Changes
+
+From the `mortgage_calculator` directory, install dependencies if needed,
+run the calculation tests, and build the production site:
+
+```bash
+npm ci
+npm test
+npm run build
+```
+
+`npm test` runs the Vitest calculation suite in `src/lib/`. It does not test
+browser location permissions, live weather requests, or iframe layout.
+
+For a browser check, run `./run.sh` and open the Local URL printed by Vite.
+Check both calculator tabs, allow location access to check nearby weather,
+and confirm city search works when location access is denied. Check an
+unknown city and a narrow mobile viewport as well. Live weather requires
+your API key in `weather_app/.env`.
+
+To inspect the production build locally:
+
+```bash
+npm run preview -- --host 127.0.0.1 --port 4173
+```
+
+Open **<http://127.0.0.1:4173/>**, or the URL printed by Vite if the port is
+busy. Keep Flask running on port **5001** to use weather in this preview.
