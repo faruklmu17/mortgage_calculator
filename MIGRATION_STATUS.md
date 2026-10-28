@@ -1100,3 +1100,18 @@ Verification before committing: all 92 tests across 3 files pass; npm run
 build, bash -n run.sh, and git diff --check pass. No .env files are included
 in the mortgage commit, and the weather submodule working tree is clean.
 No browser or live weather verification was performed in this step.
+
+
+---
+
+# Separate clone, update, and test guide (2026-10-27)
+
+Added README_setup.md with separate first-time recursive cloning
+and existing-checkout branch update instructions. Included local-change
+handling, subsequent submodule updates, API-key setup, startup, calculation
+tests, build, and browser verification instructions.
+
+Verification: npm commands checked against package.json; confirmed the
+guide includes watson_local_test and submodule initialization. Local README
+link and git diff --check pass. No application tests rerun for this
+documentation-only change.
