@@ -1,6 +1,4 @@
 # mortgage_calculator
 # Created By- Faruk Hasan
 # List of Contributors
-
-
-Feosi 
+# 1. Faruk Hasan
