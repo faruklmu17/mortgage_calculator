@@ -3,9 +3,9 @@
 # List of Contributors
 
 
-# Feosi 
-# Julianne
-# Jasmine
-# Dmitrii
-# Ethan
-# Justine
+
+
+
+
+
+# Gloria
