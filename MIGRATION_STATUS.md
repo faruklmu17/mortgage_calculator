@@ -857,3 +857,261 @@ with until Calculate Savings is clicked again. This supersedes the
 post-Step-17 rule that the toggle "refreshes with the new mode";
 calculation semantics, rounding, and `src/lib/extraMagic.js` are
 untouched. `npm test` 92/92; `npm run build` clean.
+
+
+---
+
+# Package configuration repair (2026-10-24)
+
+The latest merge mixed the legacy package configuration into the React/Vite
+manifest and lockfile, making both invalid JSON. Restored both files from
+the matching pre-merge React configuration without changing dependency
+versions. Limited Vitest discovery to `src/lib/**/*.test.js` so the legacy
+Playwright smoke test is not run by the unit-test runner.
+
+Automated verification: both JSON files parse and their root dependency
+sets match; `npm test` passes all 92 tests in 3 files; `npm run build`
+passes. No manual browser verification was performed. Work remains on
+`watson_react_migrated`; no push or deployment was performed.
+
+
+---
+
+# Weather widget — setup step 2 (2026-10-24)
+
+Created `src/components/WeatherWidget.jsx` using the iframe markup in
+`WEATHER_WIDGET_SETUP.md`. It points to the local Flask server on port
+5001 with New Haven selected, includes an accessible title, and uses
+lazy loading. App integration remains for step 3.
+
+Automated checks: 92/92 calculation tests pass; production build passes;
+the unmounted widget also passes a direct Vite JSX compilation check.
+No browser integration check was performed because the component is not
+yet mounted. No push or deployment was performed.
+
+
+---
+
+# Weather widget — setup step 3 (2026-10-24)
+
+Imported `WeatherWidget` in `src/App.jsx` and mounted it after the two
+calculator sections so it remains visible on either tab. Existing
+calculator state and logic are unchanged.
+
+Automated verification: `npm test` passes all 92 tests in 3 files;
+`npm run build` passes with the widget included. Browser verification
+and starting the mortgage development server remain for the next steps.
+No push or deployment was performed.
+
+
+---
+
+# Weather widget — local setup steps 4–5 (2026-10-24)
+
+Started Vite at http://127.0.0.1:5173/ and left Flask running at
+http://127.0.0.1:5001/. Owner selected local-only use, so public hosting
+in step 6 is deferred. No deployment, branch change, or push was performed.
+
+Automated Chromium browser checks verified live New Haven weather inside
+the iframe, Boston city search, friendly unknown-city errors, successful
+calculations on both mortgage tabs, and preservation of the main result
+on tab switching. Checked iframe bounds, internal horizontal overflow,
+and search-button visibility at viewport widths of 390px and 320px.
+No browser JavaScript errors were reported.
+
+The first mobile inspection revealed clipping. Added a full-width React
+root in style.css and corrected box sizing and the wrapping search form
+in the weather repository template. Restarted Flask and repeated the
+browser checks successfully. The browser script and screenshot are
+temporary local artifacts, not new project test dependencies.
+
+Final automated checks: npm test passes 92/92 tests; npm run build passes;
+git diff --check passes in both repositories. WEATHER_WIDGET_SETUP.md
+records current local URLs and the deferred public-hosting step.
+
+
+---
+
+# Remove obsolete TypeScript/Playwright setup (2026-10-24)
+
+Removed tsconfig.json, playwright.config.ts, and the legacy
+tests/e2e/calculator.spec.ts page-load test. These referenced dependencies
+that are no longer installed and a static server that cannot serve the
+React/Vite source. The current JavaScript/Vitest setup remains in place.
+No active application or CI references to the removed files were found.
+Historical migration notes are preserved.
+
+Verification: npm test passes all 92 tests in 3 files; npm run build
+passes. No browser check was needed for unused configuration removal.
+Changes remain local on watson_react_migrated; no push was performed.
+
+
+---
+
+# README local run instructions (2026-10-24)
+
+Updated README.md with copyable commands to install dependencies, start Vite,
+and open the mortgage website at http://127.0.0.1:5173/. Added the separate
+Flask startup command on port 5001 for the embedded weather page, environment
+setup prerequisites, and production preview instructions. Updated README
+branch references to watson_iframe.
+
+Verification: npm run build passes; git diff --check passes. Checked the
+commands against package.json and the weather iframe URL. No browser check
+or calculation tests were needed for this documentation-only change.
+
+
+---
+
+# Single-command local launcher (2026-10-24)
+
+Added executable run.sh to start Vite on 127.0.0.1:5173 and the sibling
+weather app on 127.0.0.1:5001. It prepares missing dependencies, reports
+missing prerequisites and busy ports, and stops both child servers on
+Ctrl+C or when either server exits. README.md now leads with ./run.sh.
+
+Verification: bash -n run.sh and git diff --check pass. An isolated test
+with substitute server commands verified startup from a path containing
+spaces and cleanup of both child processes after SIGINT. A real local run
+correctly reported port 5173 already in use; the existing server was left
+running. A full live launch was not performed because of that port conflict.
+
+
+---
+
+# Launcher handles occupied Vite port (2026-10-24)
+
+Removed the fixed-port preflight for Vite and its --strictPort option.
+When 5173 is occupied, Vite selects another available port. Launcher output
+and README now direct users to the actual Local URL. The weather server
+still requires port 5001 because the iframe uses that address.
+
+Verification: bash -n run.sh and git diff --check pass. A live ./run.sh
+started Flask on 5001 and Vite on 5173. With that Vite server running,
+a second Vite process using the launcher's arguments selected 5174.
+Stopped both test sessions with Ctrl+C after verification.
+
+
+---
+
+# GitHub Pages preview documentation (2026-10-24)
+
+Added GITHUB_PAGES_PREVIEW.md and linked it from README.md. The guide covers
+a separate preview repository and local copy, project-path builds, a complete
+Pages workflow, and optional Render hosting for the existing Flask weather
+app. It includes deployment checks and troubleshooting while keeping the
+production repository and domain separate. No remote resources were created,
+and no application configuration, workflow, DNS, or hosting was changed.
+
+Verification: npm run build -- --base=/mortgage-calculator-preview/ passes;
+git diff --check passes. Instructions were checked against the local files
+and official GitHub, Vite, and Render documentation. Remote deployment and
+browser verification remain steps for the reader; no deployment was performed.
+
+
+---
+
+# Nested weather repository (2026-10-27)
+
+Added weather_app as a Git submodule using the HTTPS remote
+https://github.com/SuperElephantWS/weather_app.git, pinned to commit
+76fa6d14e64da60b8e2b52528ae59ae3a0cb8c9b. Updated run.sh to start the nested
+weather app and report the submodule initialization command if it is missing.
+README.md now documents recursive cloning, initialization for existing clones,
+the nested directory layout, and the separate weather commit workflow.
+Updated WEATHER_WIDGET_SETUP.md to use the nested checkout. The original
+sibling weather repository was left in place. Work is on the watson branch.
+
+Verification: git submodule status confirms the pinned commit; the nested
+weather working tree is clean. bash -n run.sh and git diff --check pass.
+npm test passes all 92 tests across 3 files; npm run build passes. No live
+weather browser check was performed; the new checkout needs a local .env
+API key and its Python dependencies before starting Flask. No commit, push,
+or deployment was performed.
+
+
+---
+
+# Preview weather strip and calculator alignment (2026-10-27)
+
+Applied the preview repository's shared weather/calculator CSS and moved the
+weather widget above the calculator on both tabs. Reused its iframe resize
+listener with origin, source, and bounded height validation, geolocation
+permission, and responsive fallback heights. The iframe uses the nested
+weather submodule's strip layout on the existing local Flask port 5001.
+The submodule already contains the reference weather layout and scripts at
+its pinned commit, so no weather source change was needed. Updated README
+and the weather setup guide for the new layout and resizing behavior.
+Calculator mathematics and production SEO settings are unchanged.
+
+Automated verification: all 92 tests across 3 files pass; npm run build and
+git diff --check pass. Flask test-client checks against the nested weather
+app passed for strip rendering, weather icons, city-search layout
+persistence, errors, the location prompt, and the resize script. Weather
+API responses were mocked; the existing sibling virtual environment was
+used without modifying either weather checkout.
+
+Manual verification: no browser layout or live weather check was performed.
+No commit, push, or deployment was performed.
+
+
+---
+
+# README setup and final testing section (2026-10-27)
+
+Updated README.md with weather features, location permission and city-search
+behavior, weather request privacy details, prerequisites, nested repository
+structure, explicit local API-key setup, and the current watson branch.
+Documented the local iframe's public hosting limitation. Moved test, build,
+browser verification, and production preview instructions to the final
+section of the file.
+
+Verification: checked the documented npm commands against package.json and
+the deployment description against the workflow. A documentation check
+confirmed the testing section is last and branch references are current;
+git diff --check passes. No application tests or browser checks were rerun
+for this documentation-only change.
+
+
+---
+
+# Explicit contributor API-key setup (2026-10-27)
+
+Expanded README.md with OpenWeather account and API-key instructions,
+the exact nested .env location and variable name, restarting Flask after
+changes, city-search verification, troubleshooting, and local key handling.
+Clarified that each developer supplies their own key and that calculator
+features work without it. Kept testing instructions as the final section.
+
+Verification: account/key instructions checked against official OpenWeather
+setup and FAQ sources. git diff --check passes; no application tests were
+rerun for this documentation-only change.
+
+
+---
+
+# Local test release branch (2026-10-27)
+
+Created watson_local_test at the user's request to publish the current local
+weather submodule integration, responsive weather strip, launcher updates,
+and documentation. Updated active development branch instructions to match.
+
+Verification before committing: all 92 tests across 3 files pass; npm run
+build, bash -n run.sh, and git diff --check pass. No .env files are included
+in the mortgage commit, and the weather submodule working tree is clean.
+No browser or live weather verification was performed in this step.
+
+
+---
+
+# Separate clone, update, and test guide (2026-10-27)
+
+Added README_setup.md with separate first-time recursive cloning
+and existing-checkout branch update instructions. Included local-change
+handling, subsequent submodule updates, API-key setup, startup, calculation
+tests, build, and browser verification instructions.
+
+Verification: npm commands checked against package.json; confirmed the
+guide includes watson_local_test and submodule initialization. Local README
+link and git diff --check pass. No application tests rerun for this
+documentation-only change.

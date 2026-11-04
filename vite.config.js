@@ -6,4 +6,7 @@ export default defineConfig({
   // Base stays "/" for the existing root custom domain (mortgagepayofflab.com).
   base: '/',
   plugins: [react()],
+  test: {
+    include: ['src/lib/**/*.test.js'],
+  },
 });

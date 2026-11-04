@@ -15,6 +15,7 @@
 import { useEffect, useRef, useState } from 'react';
 import PaymentCalculator from './components/PaymentCalculator.jsx';
 import ExtraPaymentCalculator from './components/ExtraPaymentCalculator.jsx';
+import WeatherWidget from './components/WeatherWidget.jsx';
 import { EVENTS } from './navBridge.js';
 
 const INITIAL_MAIN_INPUTS = {
@@ -101,6 +102,8 @@ export default function CalculatorApp() {
 
   return (
     <>
+      <WeatherWidget />
+
       <main
         id="calculator"
         className="calculator-wrapper"
@@ -126,6 +129,7 @@ export default function CalculatorApp() {
           active={activeTab === 'magic'}
         />
       </main>
+
     </>
   );
 }
