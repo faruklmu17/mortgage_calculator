@@ -125,21 +125,30 @@ document.addEventListener('DOMContentLoaded', function () {
     const annualInsurance = parseInput(insuranceInput.value);
     const monthlyHoa = parseInput(hoaInput.value);
 
-    if (price <= 0) {
+    const resetResults = () => {
       paymentDisplay.textContent = "$0";
+      piDisplay.textContent = "$0";
+      totalPrincipalDisplay.textContent = "$0";
+      totalInterestDisplay.textContent = "$0";
+      totalTaxDisplay.textContent = "$0";
+      totalPaymentDisplay.textContent = "$0";
+    };
+
+    if (price <= 0) {
+      resetResults();
       showError("Please enter a valid home price.");
       return;
     }
 
-    if (downPayment >= price) {
-      paymentDisplay.textContent = "$0";
-      showError("Down payment must be less than the home price.");
+    if (downPayment < 0 || downPayment >= price) {
+      resetResults();
+      showError("Down payment must be between zero and the home price.");
       return;
     }
 
-    if (monthlyRate <= 0 || termMonths <= 0) {
-      paymentDisplay.textContent = "$0";
-      showError("Please enter a valid interest rate and term.");
+    if (monthlyRate < 0 || termMonths <= 0 || annualTax < 0 || annualInsurance < 0 || monthlyHoa < 0) {
+      resetResults();
+      showError("Please enter a valid non-negative rate, term, and fees.");
       return;
     }
 
@@ -147,7 +156,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Mortgage Formula: P [ i(1 + i)^n ] / [ (1 + i)^n – 1]
     const x = Math.pow(1 + monthlyRate, termMonths);
-    const monthlyPI = (principal * x * monthlyRate) / (x - 1);
+    const monthlyPI = monthlyRate === 0
+      ? principal / termMonths
+      : (principal * x * monthlyRate) / (x - 1);
 
     const monthlyTax = annualTax / 12;
     const monthlyInsurance = annualInsurance / 12;
