@@ -31,8 +31,6 @@ document.addEventListener('DOMContentLoaded', function () {
   const navExtra = document.getElementById('navExtra');
   const calcSection = document.getElementById('calculator');
   const extraMagicSection = document.getElementById('extra-magic-section');
-  const mainGuide = document.getElementById('guide');
-  const extraMagicGuide = document.getElementById('extra-magic-guide');
 
   const magicPrice = document.getElementById('magicPrice');
   const magicDownPayment = document.getElementById('magicDownPayment');
@@ -58,16 +56,16 @@ document.addEventListener('DOMContentLoaded', function () {
   const extraMonthlyBtn = document.getElementById('extraMonthlyBtn');
   const extraOneTimeBtn = document.getElementById('extraOneTimeBtn');
 
-  let extraMode = 'monthly'; // 'monthly' or 'one-time'
+  let extraMode = 'monthly';
 
   function parseInput(val) {
     return parseFloat(String(val).replace(/,/g, '')) || 0;
   }
 
   function formatCurrency(val) {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('en-AU', {
       style: 'currency',
-      currency: 'USD',
+      currency: 'AUD',
       maximumFractionDigits: 0
     }).format(val);
   }
@@ -84,11 +82,10 @@ document.addEventListener('DOMContentLoaded', function () {
     btnPercent.classList.remove('active');
     dpIcon.className = 'fas fa-hand-holding-usd';
 
-    // Convert current percentage value back to dollars
     const price = parseInput(priceInput.value);
     const currentVal = parseInput(downPaymentInput.value);
     if (currentVal > 0 && price > 0) {
-      downPaymentInput.value = Math.round(price * (currentVal / 100)).toLocaleString();
+      downPaymentInput.value = Math.round(price * (currentVal / 100)).toLocaleString('en-US');
     }
     calculate();
   });
@@ -100,7 +97,6 @@ document.addEventListener('DOMContentLoaded', function () {
     btnDollar.classList.remove('active');
     dpIcon.className = 'fas fa-percentage';
 
-    // Convert current dollar value to percentage
     const price = parseInput(priceInput.value);
     const currentVal = parseInput(downPaymentInput.value);
     if (currentVal > 0 && price > 0) {
@@ -144,24 +140,17 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     const principal = price - downPayment;
-
-    // Mortgage Formula: P [ i(1 + i)^n ] / [ (1 + i)^n – 1]
     const x = Math.pow(1 + monthlyRate, termMonths);
     const monthlyPI = (principal * x * monthlyRate) / (x - 1);
-
     const monthlyTax = annualTax / 12;
     const monthlyInsurance = annualInsurance / 12;
     const totalMonthly = monthlyPI + monthlyTax + monthlyInsurance + monthlyHoa;
 
-    // Update UI
     paymentDisplay.textContent = formatCurrency(totalMonthly);
     piDisplay.textContent = formatCurrency(monthlyPI);
     totalPrincipalDisplay.textContent = formatCurrency(principal);
     totalInterestDisplay.textContent = formatCurrency((monthlyPI * termMonths) - principal);
-
-    // NOTE: This is MONTHLY taxes/fees. Rename label in HTML to "Monthly Taxes & Fees"
     totalTaxDisplay.textContent = formatCurrency(monthlyTax + monthlyInsurance + monthlyHoa);
-
     totalPaymentDisplay.textContent = formatCurrency(totalMonthly * termMonths);
 
     updateChart(monthlyPI, monthlyTax, monthlyInsurance, monthlyHoa);
@@ -229,8 +218,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const originalPrincipal = price - downPayment;
     const termMonths = termYears * 12;
-
-    // Start balance defaults to original principal if not provided
     const startingBalance = currentBalanceInput > 0 ? currentBalanceInput : originalPrincipal;
 
     if (price <= 0 || (currentBalanceInput <= 0 && downPayment >= price) || rate <= 0 || termYears <= 0) {
@@ -239,21 +226,17 @@ document.addEventListener('DOMContentLoaded', function () {
       return;
     }
 
-    // Standard Monthly PI (calculated from ORIGINAL principal)
     const x = Math.pow(1 + rate, termMonths);
     const calculatedPI = (originalPrincipal * x * rate) / (x - 1);
 
-    // Use manually entered PI if present and we're not auto-updating from core fields
     let standardMonthlyPI = parseInput(magicMonthlyPI.value);
     if (standardMonthlyPI <= 0 || !isPIOverride) {
       standardMonthlyPI = calculatedPI;
-      // Only update the input field if it's not currently focused
       if (document.activeElement !== magicMonthlyPI) {
-        magicMonthlyPI.value = Math.round(standardMonthlyPI).toLocaleString();
+        magicMonthlyPI.value = Math.round(standardMonthlyPI).toLocaleString('en-US');
       }
     }
 
-    // First, simulate standard payoff starting from startingBalance to get baseline interest
     let baselineInterest = 0;
     let baselineMonths = 0;
     let tempBalance = startingBalance;
@@ -269,22 +252,18 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }
 
-    // Simulation with EXTRA payment
     let balance = startingBalance;
     let newTotalInterest = 0;
     let monthsToPayoff = 0;
-
-    // One-time payment flag
     let oneTimeApplied = false;
 
-    while (balance > 0.01 && monthsToPayoff < 600) { // Safety cap 50 years
+    while (balance > 0.01 && monthsToPayoff < 600) {
       monthsToPayoff++;
       const interestForMonth = balance * rate;
       newTotalInterest += interestForMonth;
 
       let principalRepayment = standardMonthlyPI - interestForMonth;
 
-      // Apply extra payment
       if (extraMode === 'monthly') {
         principalRepayment += extraPayment;
       } else if (extraMode === 'one-time' && !oneTimeApplied) {
@@ -304,7 +283,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const yearsSaved = Math.floor(monthsSaved / 12);
     const remainingMonthsSaved = monthsSaved % 12;
 
-    // Update UI
     interestSavedDisplay.textContent = formatCurrency(Math.max(0, interestSaved));
 
     let timeSavedText = "";
@@ -328,13 +306,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Navigation Logic
   navCalc.addEventListener('click', (e) => {
     e.preventDefault();
     calcSection.style.display = 'grid';
     extraMagicSection.style.display = 'none';
-    mainGuide.style.display = 'block';
-    extraMagicGuide.style.display = 'none';
     navCalc.classList.add('active');
     navExtra.classList.remove('active');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -344,98 +319,26 @@ document.addEventListener('DOMContentLoaded', function () {
     e.preventDefault();
     calcSection.style.display = 'none';
     extraMagicSection.style.display = 'grid';
-    mainGuide.style.display = 'none';
-    extraMagicGuide.style.display = 'block';
     navExtra.classList.add('active');
     navCalc.classList.remove('active');
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    // Sync values from main calculator if they exist
     const mainPrice = parseInput(priceInput.value);
     const magicAlreadyFilled = parseInput(magicPrice.value) > 0;
 
     if (mainPrice > 0 && !magicAlreadyFilled) {
       magicPrice.value = priceInput.value;
       magicDownPayment.value = downPaymentInput.value;
-
       const principal = mainPrice - parseInput(downPaymentInput.value);
       magicBalance.value = principal.toLocaleString('en-US');
-
       magicRate.value = rateInput.value;
       magicTerm.value = termInput.value;
       magicTax.value = taxInput.value;
       magicInsurance.value = insuranceInput.value;
       calculateMagic();
     }
-
-    // Always check if demo should run if fields are still empty
-    if (parseInput(magicPrice.value) <= 0) {
-      runMagicDemo();
-    }
   });
 
-  function runMagicDemo() {
-    const demoKey = "mpl_magic_demo_v4"; // Renamed to force reset
-    if (sessionStorage.getItem(demoKey) === "1") return;
-
-    console.log("Starting Extra Payment Magic Demo...");
-
-    const demoData = [
-      { el: magicPrice, val: "600,000" },
-      { el: magicBalance, val: "450,000" }, // Fixed: Balance should be less than Original Principal (480k)
-      { el: magicDownPayment, val: "120,000" },
-      { el: magicRate, val: "6.5" },
-      { el: magicTerm, val: "30" },
-      { el: extraAmountInput, val: "500" }
-    ];
-
-    let fieldIdx = 0;
-
-    function typeField(index, charIdx) {
-      if (index >= demoData.length) {
-        sessionStorage.setItem(demoKey, "1");
-        // Add a soft glow to results to signal completion
-        const results = document.querySelector('#extra-magic-section .results-card');
-        if (results) {
-          results.style.transition = "all 0.5s ease";
-          results.style.transform = "scale(1.02)";
-          setTimeout(() => {
-            results.style.transform = "scale(1)";
-            // Clear fields after user has seen the result for a moment
-            setTimeout(() => {
-              demoData.forEach(item => {
-                item.el.value = "";
-              });
-              // Note: We don't call calculateMagic() here so the results stay visible
-              // until the user starts typing their own values.
-            }, 2000);
-          }, 500);
-        }
-        return;
-      }
-
-      const item = demoData[index];
-      const targetVal = item.val;
-
-      if (charIdx <= targetVal.length) {
-        item.el.value = targetVal.substring(0, charIdx);
-        // Calculate as we type for real-time feel
-        if (charIdx === targetVal.length || charIdx % 3 === 0) calculateMagic();
-
-        // Faster typing for numbers
-        setTimeout(() => typeField(index, charIdx + 1), 40);
-      } else {
-        // Pause between fields
-        setTimeout(() => typeField(index + 1, 0), 200);
-      }
-    }
-
-    // Clear fields before starting
-    demoData.forEach(d => d.el.value = "");
-    typeField(0, 0);
-  }
-
-  // Magic Section Event Listeners
   magicCalcBtn.addEventListener('click', calculateMagic);
 
   [magicPrice, magicDownPayment, magicRate, magicTerm].forEach(field => {
@@ -462,7 +365,6 @@ document.addEventListener('DOMContentLoaded', function () {
     calculateMagic();
   });
 
-  // Share values for blur formatting
   [magicPrice, magicDownPayment, magicBalance, magicTax, magicInsurance, extraAmountInput, magicMonthlyPI].forEach(input => {
     input.addEventListener('blur', (e) => {
       const val = parseInput(e.target.value);
@@ -470,21 +372,12 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
-  // Button should work
   calcBtn.addEventListener('click', calculate);
 
-  // Get Started button functionality
-  document.getElementById('getStartedBtn').addEventListener('click', () => {
-    priceInput.focus();
-    priceInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  });
-
-  // Event Listeners for real-time updates
   [priceInput, downPaymentInput, rateInput, taxInput, insuranceInput, hoaInput, termInput].forEach(field => {
     field.addEventListener('input', calculate);
   });
 
-  // Auto-format currency on input blur
   [priceInput, taxInput, insuranceInput].forEach(input => {
     input.addEventListener('blur', (e) => {
       const val = parseInput(e.target.value);
@@ -497,82 +390,26 @@ document.addEventListener('DOMContentLoaded', function () {
     if (val > 0 && downPaymentMode === 'dollar') e.target.value = val.toLocaleString('en-US');
     else if (val > 0 && downPaymentMode === 'percent') e.target.value = val.toFixed(1);
   });
-
-  function runDemo() {
-    const demoData = {
-      price: "525,000",
-      downPayment: "105,000",
-      rate: "6.75",
-      tax: "6,300",
-      insurance: "1,440",
-      hoa: "250"
-    };
-
-    setTimeout(() => {
-      priceInput.value = demoData.price;
-      calculate();
-
-      setTimeout(() => {
-        rateInput.value = demoData.rate;
-        calculate();
-
-        setTimeout(() => {
-          downPaymentInput.value = demoData.downPayment;
-          taxInput.value = demoData.tax;
-          insuranceInput.value = demoData.insurance;
-          hoaInput.value = demoData.hoa;
-          calculate();
-        }, 400);
-      }, 400);
-    }, 800);
-  }
-
-  // Placeholder Typewriter Animation
-  function initTypewriter() {
-    const text = "Enter your home price here...";
-    let charIndex = 0;
-    let isDeleting = false;
-    let typeSpeed = 150;
-
-    function type() {
-      // Stop and Reset if user has typed something or the field is focused
-      if (priceInput.value !== "" || document.activeElement === priceInput) {
-        priceInput.placeholder = text;
-        setTimeout(type, 1000); // Check again in 1s
-        return;
-      }
-
-      const currentText = isDeleting
-        ? text.substring(0, charIndex--)
-        : text.substring(0, charIndex++);
-
-      priceInput.placeholder = currentText + (isDeleting ? "" : "|");
-
-      if (!isDeleting && charIndex > text.length) {
-        isDeleting = true;
-        typeSpeed = 3000; // Long pause at full message
-      } else if (isDeleting && charIndex < 0) {
-        isDeleting = false;
-        charIndex = 0;
-        typeSpeed = 500; // Pause before restarting
-      } else {
-        typeSpeed = isDeleting ? 50 : 100;
-      }
-
-      setTimeout(type, typeSpeed);
-    }
-
-    type();
-  }
-
-  initTypewriter();
-
-  // Run demo only once per visitor (recommended)
-  function runDemoOnce() {
-    if (sessionStorage.getItem("mpl_demo_seen") === "1") return;
-    sessionStorage.setItem("mpl_demo_seen", "1");
-    runDemo();
-  }
-
-  runDemoOnce();
 });
+
+// --- Google Auth Handling ---
+function handleCredentialResponse(response) {
+    console.log("Encoded JWT ID token: ", response.credential);
+
+    fetch("http://127.0.0.1:8080/auth/google", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ token: response.credential })
+    })
+    .then(res => res.json())
+    .then(data => {
+        console.log("Backend verification response:", data);
+    })
+    .catch(error => {
+        console.error("Error sending token to backend:", error);
+    });
+}
+
+window.handleCredentialResponse = handleCredentialResponse;
