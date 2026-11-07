@@ -8,4 +8,3 @@
 # Julianne
 # Dmitri
 # Ethan
-# Gloria
