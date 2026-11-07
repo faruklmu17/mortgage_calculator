@@ -15,10 +15,18 @@ test('calculates the monthly payment from the entered mortgage details', async (
   await page.locator('#insurance').fill('1200');
   await page.locator('#hoa').fill('100');
 
+  await expect(page.locator('#paymentAmount')).toHaveText('$0');
+
   await page.locator('#calcBtn').click();
 
   await expect(page.locator('#piAmount')).toHaveText('$2,398');
   await expect(page.locator('#paymentAmount')).toHaveText('$3,098');
+
+  await page.locator('#hoa').fill('200');
+  await expect(page.locator('#paymentAmount')).toHaveText('$3,098');
+
+  await page.locator('#calcBtn').click();
+  await expect(page.locator('#paymentAmount')).toHaveText('$3,198');
 });
 
 test('calculates the principal payment when the interest rate is zero', async ({ page }) => {

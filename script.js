@@ -77,6 +77,11 @@ document.addEventListener('DOMContentLoaded', function () {
     errorMsg.style.display = 'block';
   }
 
+  function clearError() {
+    errorMsg.textContent = '';
+    errorMsg.style.display = 'none';
+  }
+
   btnDollar.addEventListener('click', () => {
     if (downPaymentMode === 'dollar') return;
     downPaymentMode = 'dollar';
@@ -90,7 +95,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (currentVal > 0 && price > 0) {
       downPaymentInput.value = Math.round(price * (currentVal / 100)).toLocaleString();
     }
-    calculate();
+    clearError();
   });
 
   btnPercent.addEventListener('click', () => {
@@ -106,7 +111,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (currentVal > 0 && price > 0) {
       downPaymentInput.value = ((currentVal / price) * 100).toFixed(1);
     }
-    calculate();
+    clearError();
   });
 
   function calculate() {
@@ -490,9 +495,10 @@ document.addEventListener('DOMContentLoaded', function () {
     priceInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
   });
 
-  // Event Listeners for real-time updates
+  // Keep the previous result until the user explicitly recalculates.
   [priceInput, downPaymentInput, rateInput, taxInput, insuranceInput, hoaInput, termInput].forEach(field => {
-    field.addEventListener('input', calculate);
+    field.addEventListener('input', clearError);
+    field.addEventListener('change', clearError);
   });
 
   // Auto-format currency on input blur
@@ -508,35 +514,6 @@ document.addEventListener('DOMContentLoaded', function () {
     if (val > 0 && downPaymentMode === 'dollar') e.target.value = val.toLocaleString('en-US');
     else if (val > 0 && downPaymentMode === 'percent') e.target.value = val.toFixed(1);
   });
-
-  function runDemo() {
-    const demoData = {
-      price: "525,000",
-      downPayment: "105,000",
-      rate: "6.75",
-      tax: "6,300",
-      insurance: "1,440",
-      hoa: "250"
-    };
-
-    setTimeout(() => {
-      priceInput.value = demoData.price;
-      calculate();
-
-      setTimeout(() => {
-        rateInput.value = demoData.rate;
-        calculate();
-
-        setTimeout(() => {
-          downPaymentInput.value = demoData.downPayment;
-          taxInput.value = demoData.tax;
-          insuranceInput.value = demoData.insurance;
-          hoaInput.value = demoData.hoa;
-          calculate();
-        }, 400);
-      }, 400);
-    }, 800);
-  }
 
   // Placeholder Typewriter Animation
   function initTypewriter() {
@@ -577,13 +554,4 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   initTypewriter();
-
-  // Run demo only once per visitor (recommended)
-  function runDemoOnce() {
-    if (sessionStorage.getItem("mpl_demo_seen") === "1") return;
-    sessionStorage.setItem("mpl_demo_seen", "1");
-    runDemo();
-  }
-
-  runDemoOnce();
 });
