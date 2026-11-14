@@ -63,9 +63,9 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function formatCurrency(val) {
-    return new Intl.NumberFormat('en-AU', {
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'AUD',
+      currency: 'USD',
       maximumFractionDigits: 0
     }).format(val);
   }
@@ -75,35 +75,44 @@ document.addEventListener('DOMContentLoaded', function () {
     errorMsg.style.display = 'block';
   }
 
-  btnDollar.addEventListener('click', () => {
-    if (downPaymentMode === 'dollar') return;
-    downPaymentMode = 'dollar';
-    btnDollar.classList.add('active');
-    btnPercent.classList.remove('active');
-    dpIcon.className = 'fas fa-hand-holding-usd';
+  function clearError() {
+    errorMsg.textContent = '';
+    errorMsg.style.display = 'none';
+  }
 
-    const price = parseInput(priceInput.value);
-    const currentVal = parseInput(downPaymentInput.value);
-    if (currentVal > 0 && price > 0) {
-      downPaymentInput.value = Math.round(price * (currentVal / 100)).toLocaleString('en-US');
-    }
-    calculate();
-  });
+  if (btnDollar) {
+    btnDollar.addEventListener('click', () => {
+      if (downPaymentMode === 'dollar') return;
+      downPaymentMode = 'dollar';
+      btnDollar.classList.add('active');
+      btnPercent.classList.remove('active');
+      dpIcon.className = 'fas fa-hand-holding-usd';
 
-  btnPercent.addEventListener('click', () => {
-    if (downPaymentMode === 'percent') return;
-    downPaymentMode = 'percent';
-    btnPercent.classList.add('active');
-    btnDollar.classList.remove('active');
-    dpIcon.className = 'fas fa-percentage';
+      const price = parseInput(priceInput.value);
+      const currentVal = parseInput(downPaymentInput.value);
+      if (currentVal > 0 && price > 0) {
+        downPaymentInput.value = Math.round(price * (currentVal / 100)).toLocaleString('en-US');
+      }
+      clearError();
+    });
+  }
 
-    const price = parseInput(priceInput.value);
-    const currentVal = parseInput(downPaymentInput.value);
-    if (currentVal > 0 && price > 0) {
-      downPaymentInput.value = ((currentVal / price) * 100).toFixed(1);
-    }
-    calculate();
-  });
+  if (btnPercent) {
+    btnPercent.addEventListener('click', () => {
+      if (downPaymentMode === 'percent') return;
+      downPaymentMode = 'percent';
+      btnPercent.classList.add('active');
+      btnDollar.classList.remove('active');
+      dpIcon.className = 'fas fa-percentage';
+
+      const price = parseInput(priceInput.value);
+      const currentVal = parseInput(downPaymentInput.value);
+      if (currentVal > 0 && price > 0) {
+        downPaymentInput.value = ((currentVal / price) * 100).toFixed(1);
+      }
+      clearError();
+    });
+  }
 
   function calculate() {
     errorMsg.style.display = 'none';
@@ -121,27 +130,39 @@ document.addEventListener('DOMContentLoaded', function () {
     const annualInsurance = parseInput(insuranceInput.value);
     const monthlyHoa = parseInput(hoaInput.value);
 
-    if (price <= 0) {
+    const resetResults = () => {
       paymentDisplay.textContent = "$0";
+      piDisplay.textContent = "$0";
+      totalPrincipalDisplay.textContent = "$0";
+      totalInterestDisplay.textContent = "$0";
+      totalTaxDisplay.textContent = "$0";
+      totalPaymentDisplay.textContent = "$0";
+    };
+
+    if (price <= 0) {
+      resetResults();
       showError("Please enter a valid home price.");
       return;
     }
 
-    if (downPayment >= price) {
-      paymentDisplay.textContent = "$0";
-      showError("Down payment must be less than the home price.");
+    if (downPayment < 0 || downPayment >= price) {
+      resetResults();
+      showError("Down payment must be between zero and the home price.");
       return;
     }
 
-    if (monthlyRate <= 0 || termMonths <= 0) {
-      paymentDisplay.textContent = "$0";
-      showError("Please enter a valid interest rate and term.");
+    if (monthlyRate < 0 || termMonths <= 0 || annualTax < 0 || annualInsurance < 0 || monthlyHoa < 0) {
+      resetResults();
+      showError("Please enter a valid non-negative rate, term, and fees.");
       return;
     }
 
     const principal = price - downPayment;
     const x = Math.pow(1 + monthlyRate, termMonths);
-    const monthlyPI = (principal * x * monthlyRate) / (x - 1);
+    const monthlyPI = monthlyRate === 0
+      ? principal / termMonths
+      : (principal * x * monthlyRate) / (x - 1);
+
     const monthlyTax = annualTax / 12;
     const monthlyInsurance = annualInsurance / 12;
     const totalMonthly = monthlyPI + monthlyTax + monthlyInsurance + monthlyHoa;
@@ -205,6 +226,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function calculateMagic(isPIOverride = false) {
+    if (!magicPrice || !magicDownPayment || !magicBalance || !magicRate || !magicTerm) return;
     magicErrorMsg.style.display = 'none';
 
     const price = parseInput(magicPrice.value);
@@ -306,110 +328,159 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  navCalc.addEventListener('click', (e) => {
-    e.preventDefault();
-    calcSection.style.display = 'grid';
-    extraMagicSection.style.display = 'none';
-    navCalc.classList.add('active');
-    navExtra.classList.remove('active');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  });
+  if (navCalc) {
+    navCalc.addEventListener('click', (e) => {
+      e.preventDefault();
+      calcSection.style.display = 'grid';
+      extraMagicSection.style.display = 'none';
+      navCalc.classList.add('active');
+      navExtra.classList.remove('active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
 
-  navExtra.addEventListener('click', (e) => {
-    e.preventDefault();
-    calcSection.style.display = 'none';
-    extraMagicSection.style.display = 'grid';
-    navExtra.classList.add('active');
-    navCalc.classList.remove('active');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  if (navExtra) {
+    navExtra.addEventListener('click', (e) => {
+      e.preventDefault();
+      calcSection.style.display = 'none';
+      extraMagicSection.style.display = 'grid';
+      navExtra.classList.add('active');
+      navCalc.classList.remove('active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    const mainPrice = parseInput(priceInput.value);
-    const magicAlreadyFilled = parseInput(magicPrice.value) > 0;
+      const mainPrice = parseInput(priceInput.value);
+      const magicAlreadyFilled = magicPrice ? parseInput(magicPrice.value) > 0 : false;
 
-    if (mainPrice > 0 && !magicAlreadyFilled) {
-      magicPrice.value = priceInput.value;
-      magicDownPayment.value = downPaymentInput.value;
-      const principal = mainPrice - parseInput(downPaymentInput.value);
-      magicBalance.value = principal.toLocaleString('en-US');
-      magicRate.value = rateInput.value;
-      magicTerm.value = termInput.value;
-      magicTax.value = taxInput.value;
-      magicInsurance.value = insuranceInput.value;
-      calculateMagic();
-    }
-  });
+      if (mainPrice > 0 && !magicAlreadyFilled && magicPrice) {
+        magicPrice.value = priceInput.value;
+        magicDownPayment.value = downPaymentInput.value;
+        const principal = mainPrice - parseInput(downPaymentInput.value);
+        magicBalance.value = principal.toLocaleString('en-US');
+        magicRate.value = rateInput.value;
+        magicTerm.value = termInput.value;
+        magicTax.value = taxInput.value;
+        magicInsurance.value = insuranceInput.value;
+        calculateMagic();
+      }
+    });
+  }
 
-  magicCalcBtn.addEventListener('click', calculateMagic);
+  if (magicCalcBtn) {
+    magicCalcBtn.addEventListener('click', () => calculateMagic(false));
+  }
 
   [magicPrice, magicDownPayment, magicRate, magicTerm].forEach(field => {
-    field.addEventListener('input', () => calculateMagic(false));
+    if (field) field.addEventListener('input', () => calculateMagic(false));
   });
 
   [magicBalance, magicTax, magicInsurance, extraAmountInput].forEach(field => {
-    field.addEventListener('input', () => calculateMagic(true));
+    if (field) field.addEventListener('input', () => calculateMagic(true));
   });
 
-  magicMonthlyPI.addEventListener('input', () => calculateMagic(true));
+  if (magicMonthlyPI) {
+    magicMonthlyPI.addEventListener('input', () => calculateMagic(true));
+  }
 
-  extraMonthlyBtn.addEventListener('click', () => {
-    extraMode = 'monthly';
-    extraMonthlyBtn.classList.add('active');
-    extraOneTimeBtn.classList.remove('active');
-    calculateMagic();
-  });
+  if (extraMonthlyBtn) {
+    extraMonthlyBtn.addEventListener('click', () => {
+      extraMode = 'monthly';
+      extraMonthlyBtn.classList.add('active');
+      extraOneTimeBtn.classList.remove('active');
+      calculateMagic();
+    });
+  }
 
-  extraOneTimeBtn.addEventListener('click', () => {
-    extraMode = 'one-time';
-    extraOneTimeBtn.classList.add('active');
-    extraMonthlyBtn.classList.remove('active');
-    calculateMagic();
-  });
+  if (extraOneTimeBtn) {
+    extraOneTimeBtn.addEventListener('click', () => {
+      extraMode = 'one-time';
+      extraOneTimeBtn.classList.add('active');
+      extraMonthlyBtn.classList.remove('active');
+      calculateMagic();
+    });
+  }
 
   [magicPrice, magicDownPayment, magicBalance, magicTax, magicInsurance, extraAmountInput, magicMonthlyPI].forEach(input => {
-    input.addEventListener('blur', (e) => {
-      const val = parseInput(e.target.value);
-      if (val > 0) e.target.value = val.toLocaleString('en-US');
-    });
+    if (input) {
+      input.addEventListener('blur', (e) => {
+        const val = parseInput(e.target.value);
+        if (val > 0) e.target.value = val.toLocaleString('en-US');
+      });
+    }
   });
 
-  calcBtn.addEventListener('click', calculate);
+  if (calcBtn) {
+    calcBtn.addEventListener('click', calculate);
+  }
+
+  const getStartedBtn = document.getElementById('getStartedBtn');
+  if (getStartedBtn) {
+    getStartedBtn.addEventListener('click', () => {
+      priceInput.focus();
+      priceInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    });
+  }
 
   [priceInput, downPaymentInput, rateInput, taxInput, insuranceInput, hoaInput, termInput].forEach(field => {
-    field.addEventListener('input', calculate);
+    if (field) {
+      field.addEventListener('input', clearError);
+      field.addEventListener('change', clearError);
+    }
   });
 
   [priceInput, taxInput, insuranceInput].forEach(input => {
-    input.addEventListener('blur', (e) => {
+    if (input) {
+      input.addEventListener('blur', (e) => {
+        const val = parseInput(e.target.value);
+        if (val > 0) e.target.value = val.toLocaleString('en-US');
+      });
+    }
+  });
+
+  if (downPaymentInput) {
+    downPaymentInput.addEventListener('blur', (e) => {
       const val = parseInput(e.target.value);
-      if (val > 0) e.target.value = val.toLocaleString('en-US');
+      if (val > 0 && downPaymentMode === 'dollar') e.target.value = val.toLocaleString('en-US');
+      else if (val > 0 && downPaymentMode === 'percent') e.target.value = val.toFixed(1);
     });
-  });
+  }
 
-  downPaymentInput.addEventListener('blur', (e) => {
-    const val = parseInput(e.target.value);
-    if (val > 0 && downPaymentMode === 'dollar') e.target.value = val.toLocaleString('en-US');
-    else if (val > 0 && downPaymentMode === 'percent') e.target.value = val.toFixed(1);
-  });
+  // Placeholder Typewriter Animation
+  function initTypewriter() {
+    if (!priceInput) return;
+    const text = "Enter your home price here...";
+    let charIndex = 0;
+    let isDeleting = false;
+    let typeSpeed = 150;
+
+    function type() {
+      if (priceInput.value !== "" || document.activeElement === priceInput) {
+        priceInput.placeholder = text;
+        setTimeout(type, 1000);
+        return;
+      }
+
+      const currentText = isDeleting
+        ? text.substring(0, charIndex--)
+        : text.substring(0, charIndex++);
+
+      priceInput.placeholder = currentText + (isDeleting ? "" : "|");
+
+      if (!isDeleting && charIndex > text.length) {
+        isDeleting = true;
+        typeSpeed = 3000;
+      } else if (isDeleting && charIndex < 0) {
+        isDeleting = false;
+        charIndex = 0;
+        typeSpeed = 500;
+      } else {
+        typeSpeed = isDeleting ? 50 : 100;
+      }
+
+      setTimeout(type, typeSpeed);
+    }
+
+    type();
+  }
+
+  initTypewriter();
 });
-
-// --- Google Auth Handling ---
-function handleCredentialResponse(response) {
-    console.log("Encoded JWT ID token: ", response.credential);
-
-    fetch("http://127.0.0.1:8080/auth/google", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ token: response.credential })
-    })
-    .then(res => res.json())
-    .then(data => {
-        console.log("Backend verification response:", data);
-    })
-    .catch(error => {
-        console.error("Error sending token to backend:", error);
-    });
-}
-
-window.handleCredentialResponse = handleCredentialResponse;

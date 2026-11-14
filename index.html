@@ -51,7 +51,7 @@
       "offers": {
         "@type": "Offer",
         "price": "0",
-        "priceCurrency": "AUD"
+        "priceCurrency": "USD"
       }
     }
     </script>
@@ -77,14 +77,7 @@
                     <span class="nav-badge">NEW</span>
                 </a>
                 <a href="#guide" class="nav-item">Guide</a>
-
-                <!-- Google Sign-In Integration -->
-                <script src="https://accounts.google.com/gsi/client" async></script>
-                <div id="g_id_onload"
-                     data-client_id="YOUR_CLIENT_ID_HERE.apps.googleusercontent.com"
-                     data-callback="handleCredentialResponse">
-                </div>
-                <div class="g_id_signin" data-type="standard" data-theme="filled_black" data-shape="pill"></div>
+                <button class="nav-btn" id="getStartedBtn">Get Started</button>
             </nav>
             <div class="mobile-menu-btn">
                 <i class="fas fa-bars"></i>
@@ -99,7 +92,7 @@
             <p class="subtitle">Enter your details to estimate your total monthly property expenses.</p>
 
             <div class="input-group">
-                <label for="price">Home Price (AUD)</label>
+                <label for="price">Home Price ($)</label>
                 <div class="input-wrapper">
                     <i class="fas fa-home"></i>
                     <input type="text" id="price" placeholder="" aria-label="Home Purchase Price">
@@ -144,7 +137,7 @@
                     </div>
                 </div>
                 <div class="input-group">
-                    <label for="tax">Property Tax (Annual AUD)</label>
+                    <label for="tax">Property Tax (Annual $)</label>
                     <div class="input-wrapper">
                         <i class="fas fa-landmark"></i>
                         <input type="text" id="tax" placeholder="5,500" aria-label="Annual Property Tax">
@@ -154,14 +147,14 @@
 
             <div class="row">
                 <div class="input-group">
-                    <label for="insurance">Home Insurance (Annual AUD)</label>
+                    <label for="insurance">Home Insurance (Annual $)</label>
                     <div class="input-wrapper">
                         <i class="fas fa-shield-alt"></i>
                         <input type="text" id="insurance" placeholder="1,200" aria-label="Annual Homeowners Insurance">
                     </div>
                 </div>
                 <div class="input-group">
-                    <label for="hoa">HOA Fee (Monthly AUD)</label>
+                    <label for="hoa">HOA Fee (Monthly $)</label>
                     <div class="input-wrapper">
                         <i class="fas fa-building"></i>
                         <input type="text" id="hoa" placeholder="0" aria-label="Monthly HOA Fees">
@@ -222,7 +215,7 @@
 
             <div class="row">
                 <div class="input-group">
-                    <label for="magicPrice">Original Home Price (AUD)</label>
+                    <label for="magicPrice">Original Home Price ($)</label>
                     <div class="input-wrapper">
                         <i class="fas fa-home"></i>
                         <input type="text" id="magicPrice" placeholder="600,000" aria-label="Original Home Price">
@@ -230,7 +223,7 @@
                 </div>
                 <div class="input-group">
                     <label for="magicMonthlyPI" style="display: flex; align-items: center; gap: 6px;">
-                        Monthly P&I Payment (AUD)
+                        Monthly P&I Payment ($)
                         <div class="tooltip-container">
                             <i class="fas fa-info-circle"
                                 style="font-size: 0.8rem; cursor: help; color: var(--text-muted);"></i>
@@ -246,7 +239,7 @@
                 </div>
             </div>
             <div class="input-group">
-                <label for="magicBalance">Current Loan Balance (AUD)</label>
+                <label for="magicBalance">Current Loan Balance ($)</label>
                 <div class="input-wrapper">
                     <i class="fas fa-money-bill-trend-up" style="color: var(--secondary);"></i>
                     <input type="text" id="magicBalance" placeholder="515,000" aria-label="Current Loan Balance">
@@ -255,7 +248,7 @@
 
             <div class="row">
                 <div class="input-group">
-                    <label for="magicDownPayment">Down Payment (AUD)</label>
+                    <label for="magicDownPayment">Down Payment ($)</label>
                     <div class="input-wrapper">
                         <i class="fas fa-hand-holding-usd"></i>
                         <input type="text" id="magicDownPayment" placeholder="105,000" aria-label="Down Payment Amount">
@@ -284,7 +277,7 @@
                     </div>
                 </div>
                 <div class="input-group">
-                    <label for="magicTax">Property Tax (Annual AUD)</label>
+                    <label for="magicTax">Property Tax (Annual $)</label>
                     <div class="input-wrapper">
                         <i class="fas fa-landmark"></i>
                         <input type="text" id="magicTax" placeholder="5,500" aria-label="Annual Property Tax">
@@ -294,7 +287,7 @@
 
             <div class="row">
                 <div class="input-group">
-                    <label for="magicInsurance">Home Insurance (Annual AUD)</label>
+                    <label for="magicInsurance">Home Insurance (Annual $)</label>
                     <div class="input-wrapper">
                         <i class="fas fa-shield-alt"></i>
                         <input type="text" id="magicInsurance" placeholder="1,200"
@@ -373,7 +366,6 @@
                     Enter your details to see the magic happen!
                 </div>
                 <i class="fas fa-piggy-bank"></i>
-            </div>
             </div>
         </aside>
     </main>
