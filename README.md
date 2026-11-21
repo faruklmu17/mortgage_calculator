@@ -1,9 +1,10 @@
 # mortgage_calculator
 # Created By- Faruk Hasan
 # List of Contributors
-
-
-# Feosi 
-# Julianne
+# Feosi
+# Gloria
 # Jasmine
-# Dmitrii
+# Justine
+# Julianne
+# Dmitri
+# Ethan
