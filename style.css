@@ -61,17 +61,18 @@ body {
     position: sticky;
     top: 0;
     z-index: 1000;
-    background: rgba(15, 23, 42, 0.8);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    background: rgba(15, 23, 42, 0.88);
+    backdrop-filter: blur(24px) saturate(140%);
+    -webkit-backdrop-filter: blur(24px) saturate(140%);
     border-bottom: 1px solid var(--glass-border);
     padding: 0 20px;
+    box-shadow: 0 8px 30px rgba(2, 6, 23, 0.12);
 }
 
 .header-content {
     max-width: 1200px;
     margin: 0 auto;
-    height: 70px;
+    height: 76px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -80,27 +81,29 @@ body {
 .logo {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 11px;
     text-decoration: none;
     color: #fff;
 }
 
 .logo-icon {
-    width: 36px;
-    height: 36px;
-    background: var(--primary);
-    border-radius: 10px;
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 65%, #3730a3 100%);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 1.1rem;
-    box-shadow: 0 0 15px rgba(79, 70, 229, 0.3);
+    box-shadow: 0 8px 20px rgba(79, 70, 229, 0.28);
 }
 
 .logo span {
     font-family: 'Outfit', sans-serif;
     font-weight: 700;
-    font-size: 1.3rem;
+    font-size: 1.22rem;
+    letter-spacing: -0.02em;
     background: linear-gradient(to right, #fff, #94a3b8);
     -webkit-background-clip: text;
     background-clip: text;
@@ -110,7 +113,7 @@ body {
 .nav-links {
     display: flex;
     align-items: center;
-    gap: 30px;
+    gap: 8px;
 }
 
 .nav-item {
@@ -118,11 +121,14 @@ body {
     text-decoration: none;
     font-weight: 500;
     font-size: 0.95rem;
-    transition: color 0.2s ease;
+    transition: color 0.2s ease, background 0.2s ease;
     display: flex;
     align-items: center;
     position: relative;
-    gap: 4px;
+    gap: 6px;
+    min-height: 40px;
+    padding: 0 12px;
+    border-radius: 10px;
 }
 
 .nav-badge {
@@ -171,18 +177,32 @@ body {
 .nav-item:hover,
 .nav-item.active {
     color: #fff;
+    background: rgba(255, 255, 255, 0.055);
+}
+
+.nav-item.active::after {
+    content: "";
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: 2px;
+    height: 2px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #818cf8, #22d3ee);
 }
 
 .nav-btn {
-    background: rgba(255, 255, 255, 0.1);
+    background: linear-gradient(135deg, #6366f1, #4f46e5);
     color: #fff;
-    border: 1px solid var(--glass-border);
-    padding: 8px 20px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    padding: 10px 18px;
     border-radius: 99px;
     font-weight: 600;
     font-size: 0.9rem;
+    margin-left: 8px;
     cursor: pointer;
     transition: all 0.3s ease;
+    box-shadow: 0 8px 18px rgba(79, 70, 229, 0.22);
 }
 
 .nav-btn:hover {
@@ -195,8 +215,15 @@ body {
 .mobile-menu-btn {
     display: none;
     color: #fff;
-    font-size: 1.5rem;
+    width: 42px;
+    height: 42px;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
     cursor: pointer;
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.06);
 }
 
 /* --- Layout Wrapper (adjusted) --- */
@@ -636,12 +663,60 @@ select:focus {
 }
 
 @media (max-width: 768px) {
+    .main-header {
+        padding: 0 16px;
+    }
+
+    .header-content {
+        height: 68px;
+        position: relative;
+    }
+
     .nav-links {
         display: none;
     }
 
     .mobile-menu-btn {
-        display: block;
+        display: flex;
+    }
+
+    .nav-links.open {
+        display: flex;
+        position: absolute;
+        top: 58px;
+        left: 0;
+        right: 0;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 4px;
+        padding: 10px;
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        background: rgba(15, 23, 42, 0.98);
+        box-shadow: 0 20px 40px rgba(2, 6, 23, 0.38);
+    }
+
+    .nav-links.open .nav-item {
+        width: 100%;
+        padding: 10px 12px;
+    }
+
+    .nav-links.open .nav-item.active::after {
+        display: none;
+    }
+
+    .nav-links.open .nav-btn {
+        width: 100%;
+        margin: 4px 0 0;
+    }
+
+    .logo span {
+        font-size: 1.05rem;
+    }
+
+    .logo-icon {
+        width: 38px;
+        height: 38px;
     }
 }
 

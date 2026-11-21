@@ -495,6 +495,25 @@ document.addEventListener('DOMContentLoaded', function () {
     priceInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
   });
 
+  const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+  const mainNav = document.getElementById('mainNav');
+
+  mobileMenuBtn.addEventListener('click', () => {
+    const isOpen = mainNav.classList.toggle('open');
+    mobileMenuBtn.setAttribute('aria-expanded', String(isOpen));
+    mobileMenuBtn.setAttribute('aria-label', isOpen ? 'Close navigation' : 'Open navigation');
+    mobileMenuBtn.querySelector('i').className = isOpen ? 'fas fa-xmark' : 'fas fa-bars';
+  });
+
+  mainNav.querySelectorAll('a').forEach(link => {
+    link.addEventListener('click', () => {
+      mainNav.classList.remove('open');
+      mobileMenuBtn.setAttribute('aria-expanded', 'false');
+      mobileMenuBtn.setAttribute('aria-label', 'Open navigation');
+      mobileMenuBtn.querySelector('i').className = 'fas fa-bars';
+    });
+  });
+
   // Keep the previous result until the user explicitly recalculates.
   [priceInput, downPaymentInput, rateInput, taxInput, insuranceInput, hoaInput, termInput].forEach(field => {
     field.addEventListener('input', clearError);
