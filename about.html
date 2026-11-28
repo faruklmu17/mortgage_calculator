@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <link rel="canonical" href="https://mortgagepayofflab.com/about.html" />
+
+    <title>About Us – Mortgage Payoff Lab</title>
+    <meta name="title" content="About Us – Mortgage Payoff Lab" />
+    <meta name="description"
+        content="Learn about Mortgage Payoff Lab—our privacy-first mission, transparent mortgage math, and the creator and contributors behind the project." />
+    <meta name="author" content="Mortgage Payoff Lab" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://mortgagepayofflab.com/about.html" />
+    <meta property="og:title" content="About Us – Mortgage Payoff Lab" />
+    <meta property="og:description"
+        content="Empowering homeowners with transparent, privacy-first mortgage and extra-payment calculators." />
+    <meta property="og:image" content="preview.png" />
+
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        media="print" onload="this.media='all'" />
+
+    <style>
+        .about-container {
+            width: 100%;
+            max-width: 1040px;
+            margin: 40px auto 0;
+            padding: 0 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 28px;
+            animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            align-self: flex-start;
+            transition: color 0.2s ease, transform 0.2s ease;
+        }
+
+        .back-link:hover {
+            color: #818cf8;
+            transform: translateX(-3px);
+        }
+
+        .about-hero p {
+            color: var(--text-muted);
+            line-height: 1.75;
+            font-size: 1.05rem;
+            margin-bottom: 16px;
+        }
+
+        .about-hero p:last-child {
+            margin-bottom: 0;
+        }
+
+        .about-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 20px;
+        }
+
+        .about-feature-card {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 28px;
+            box-shadow: var(--glass-shadow);
+        }
+
+        .feature-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.15rem;
+            margin-bottom: 16px;
+            background: rgba(79, 70, 229, 0.16);
+            color: #818cf8;
+            border: 1px solid rgba(129, 140, 248, 0.25);
+        }
+
+        .feature-icon.secondary {
+            background: rgba(16, 185, 129, 0.14);
+            color: var(--secondary);
+            border-color: rgba(16, 185, 129, 0.28);
+        }
+
+        .about-feature-card h2,
+        .about-section-title {
+            font-family: 'Outfit', sans-serif;
+            color: #fff;
+            font-size: 1.25rem;
+            margin-bottom: 10px;
+        }
+
+        .about-section-title {
+            font-size: 1.6rem;
+            margin-bottom: 14px;
+        }
+
+        .about-feature-card p,
+        .about-card-text {
+            color: var(--text-muted);
+            line-height: 1.65;
+            font-size: 0.95rem;
+        }
+
+        .team-lead {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            padding: 18px 22px;
+            border-radius: 16px;
+            background: rgba(79, 70, 229, 0.12);
+            border: 1px solid rgba(129, 140, 248, 0.28);
+            margin: 18px 0 22px;
+        }
+
+        .team-lead-name {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .team-lead-role {
+            font-size: 0.85rem;
+            color: #c7d2fe;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 600;
+        }
+
+        .contributors-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .contributor-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: 99px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .contributor-pill i {
+            color: var(--secondary);
+            font-size: 0.8rem;
+        }
+
+        .about-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-top: 24px;
+        }
+
+        .about-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 22px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.25s ease;
+        }
+
+        .about-btn-primary {
+            background: var(--primary);
+            color: #fff;
+            border: 1px solid var(--primary);
+        }
+
+        .about-btn-primary:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px -5px rgba(79, 70, 229, 0.45);
+        }
+
+        .about-btn-secondary {
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-main);
+            border: 1px solid var(--glass-border);
+        }
+
+        .about-btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateY(-2px);
+        }
+
+        .disclaimer-card {
+            border-color: rgba(16, 185, 129, 0.25);
+            background: rgba(16, 185, 129, 0.05);
+        }
+    </style>
+</head>
+
+<body>
+    <header class="main-header">
+        <div class="header-content">
+            <a href="index.html" class="logo">
+                <div class="logo-icon"><i class="fas fa-chart-pie"></i></div>
+                <span>Mortgage Payoff Lab</span>
+            </a>
+            <nav class="nav-links">
+                <a href="index.html#calculator" class="nav-item">Calculator</a>
+                <a href="index.html#guide" class="nav-item">Guide</a>
+                <a href="about.html" class="nav-item active">About Us</a>
+                <a href="privacy.html" class="nav-item">Privacy</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="about-container">
+        <a href="index.html" class="back-link">
+            <i class="fas fa-arrow-left"></i> Back to Calculator
+        </a>
+
+        <section class="calc-card about-hero">
+            <div class="badge"
+                style="background: rgba(79, 70, 229, 0.2); color: #c7d2fe; border: 1px solid rgba(129, 140, 248, 0.35);">
+                ABOUT US
+            </div>
+            <h1>Clarity Over <span style="color: var(--primary);">Complexity</span></h1>
+            <p class="subtitle">Helping homebuyers and homeowners understand every dollar of their mortgage—without
+                ads, sign-ups, or hidden agendas.</p>
+            <p>
+                <strong>Mortgage Payoff Lab</strong> was created to make mortgage math approachable and transparent.
+                Whether you are budgeting for your first home or looking at how extra principal payments can shave years
+                off an existing loan, you deserve clear numbers in seconds.
+            </p>
+            <p>
+                Too many online financial calculators collect personal contact details before showing full results. We
+                built the opposite: a fast, browser-based workspace where all calculations happen locally on your
+                device.
+            </p>
+        </section>
+
+        <section class="about-grid" aria-label="Core Principles">
+            <article class="about-feature-card">
+                <div class="feature-icon secondary"><i class="fas fa-user-shield"></i></div>
+                <h2>Privacy-First</h2>
+                <p>No accounts, no tracking of your financial inputs, and no server storage. Every calculation stays in
+                    your browser.</p>
+            </article>
+
+            <article class="about-feature-card">
+                <div class="feature-icon"><i class="fas fa-square-root-variable"></i></div>
+                <h2>Transparent Math</h2>
+                <p>Built on the standard monthly amortization formula with clear assumptions for PITI (Principal,
+                    Interest, Taxes, Insurance) and HOA fees.</p>
+            </article>
+
+            <article class="about-feature-card">
+                <div class="feature-icon secondary"><i class="fas fa-wand-magic-sparkles"></i></div>
+                <h2>Extra Payment Magic</h2>
+                <p>Simulate monthly or one-time extra principal payments to see your exact interest savings and faster
+                    payoff timeline.</p>
+            </article>
+        </section>
+
+        <section class="calc-card">
+            <h2 class="about-section-title">Creator &amp; Contributors</h2>
+            <p class="about-card-text">
+                Mortgage Payoff Lab is an open-source project built and refined collaboratively.
+            </p>
+
+            <div class="team-lead">
+                <div>
+                    <div class="team-lead-role">Created By</div>
+                    <div class="team-lead-name">Faruk Hasan</div>
+                </div>
+                <a href="https://github.com/faruklmu17/mortgage_calculator" target="_blank" rel="noopener noreferrer"
+                    class="about-btn about-btn-secondary">
+                    <i class="fab fa-github"></i> View Repository
+                </a>
+            </div>
+
+            <h3 style="font-family: 'Outfit', sans-serif; color: #fff; font-size: 1.05rem;">Project Contributors</h3>
+            <div class="contributors-list">
+                <span class="contributor-pill"><i class="fas fa-code"></i> Feosi</span>
+                <span class="contributor-pill"><i class="fas fa-code"></i> Gloria</span>
+                <span class="contributor-pill"><i class="fas fa-code"></i> Jasmine</span>
+                <span class="contributor-pill"><i class="fas fa-code"></i> Justine</span>
+                <span class="contributor-pill"><i class="fas fa-code"></i> Julianne</span>
+                <span class="contributor-pill"><i class="fas fa-code"></i> Dmitri</span>
+                <span class="contributor-pill"><i class="fas fa-code"></i> Ethan</span>
+            </div>
+
+            <div class="about-actions">
+                <a href="index.html" class="about-btn about-btn-primary">
+                    <i class="fas fa-calculator"></i> Launch Calculator
+                </a>
+                <a href="https://github.com/faruklmu17/mortgage_calculator/issues" target="_blank"
+                    rel="noopener noreferrer" class="about-btn about-btn-secondary">
+                    <i class="fas fa-comment-dots"></i> Feedback &amp; Issues
+                </a>
+            </div>
+        </section>
+
+        <section class="calc-card disclaimer-card">
+            <h2 class="about-section-title">
+                <i class="fas fa-circle-info" style="color: var(--secondary); margin-right: 8px;"></i>
+                Educational Disclaimer
+            </h2>
+            <p class="about-card-text">
+                All calculations and payoff simulations provided by Mortgage Payoff Lab are estimates for educational
+                and planning purposes only. They do not constitute financial, tax, or legal advice. Actual loan terms,
+                escrow amounts, PMI, and prepayment rules depend on your lender and local regulations.
+            </p>
+        </section>
+    </main>
+
+    <footer class="main-footer">
+        <div class="footer-content">
+            <div class="footer-brand">
+                <div class="footer-logo">
+                    <i class="fas fa-chart-pie"></i>
+                    <span>Mortgage Payoff Lab</span>
+                </div>
+                <p class="footer-desc">
+                    Empowering homeowners with transparent, easy-to-use financial tools to help you make smarter
+                    decisions.
+                </p>
+            </div>
+
+            <div class="footer-links-group">
+                <h4>Product</h4>
+                <a href="index.html#calculator">Calculator</a>
+                <a href="index.html#guide">Guide</a>
+                <a href="index.html#tips">Tips</a>
+            </div>
+
+            <div class="footer-links-group">
+                <h4>Company</h4>
+                <a href="about.html">About Us</a>
+                <a href="https://github.com/faruklmu17/mortgage_calculator/issues" target="_blank"
+                    rel="noopener noreferrer">Contact</a>
+                <a href="privacy.html">Privacy Policy</a>
+            </div>
+
+            <div class="footer-social">
+                <h4>Connect</h4>
+                <div class="social-icons">
+                    <a href="https://github.com/faruklmu17/mortgage_calculator" target="_blank"
+                        rel="noopener noreferrer" aria-label="GitHub"><i class="fab fa-github"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <p>&copy; 2026 Mortgage Payoff Lab. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+
+</html>
